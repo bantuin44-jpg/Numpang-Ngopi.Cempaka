@@ -582,6 +582,7 @@ let currentView = "dashboard";
 let menuTab = "produk", stokTab = "stok", lapTab = "penjualan";
 let editingProdId = null, editingCatId = null, editingUserId = null;
 let lastTrxData = null;
+let chartWeekly = null, chartPayment = null, chartTopProduct = null;
 
 const PAY_METHODS = ["Cash","QRIS","Transfer","E-Wallet","Debit","Credit Card"];
 
@@ -596,7 +597,11 @@ function applyTheme(mode){
   const b1 = document.getElementById("themeBtnLogin"); if(b1) b1.textContent = label;
   const b2 = document.getElementById("themeBtnApp"); if(b2) b2.textContent = label;
   try{ localStorage.setItem("ngopi_theme", mode); }catch(e){}
-  if (typeof currentView !== "undefined" && currentView === "dashboard") renderDashboard();
+  // Dashboard hanya di-render ulang kalau aplikasi sudah aktif (user sudah login
+  // dan sedang berada di view dashboard). Ini mencegah error saat tema diterapkan
+  // pertama kali sebelum user login / sebelum chart siap dipakai.
+  const appActive = document.getElementById("appShell")?.classList.contains("active");
+  if (appActive && currentView === "dashboard") renderDashboard();
 }
 function toggleTheme(){
   const isLight = document.body.classList.contains("theme-light");
@@ -1062,7 +1067,6 @@ function voidTransaction(id){
 /* =========================================================
    DASHBOARD
 ========================================================= */
-let chartWeekly, chartPayment, chartTopProduct;
 function renderDashboard(){
   if (typeof Chart === "undefined") {
     console.warn("Chart.js belum termuat, grafik dilewati sementara.");
@@ -1085,8 +1089,8 @@ function renderDashboard(){
   const days = []; const labels=[];
   for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); const key=d.toISOString().slice(0,10); days.push(key); labels.push(d.toLocaleDateString("id-ID",{weekday:"short"})); }
   const weeklyData = days.map(dk => Object.values(allTransactions||{}).filter(t=>t.date===dk && t.status!=="void").reduce((s,t)=>s+t.total,0));
-  if (typeof Chart === "undefined") return; // library grafik belum siap, lewati render chart kali ini
   const ctx1 = document.getElementById("chartWeekly");
+  if(typeof Chart === "undefined" || !ctx1) return; // library grafik belum siap atau canvas belum ada, lewati render chart kali ini
   if(chartWeekly) chartWeekly.destroy();
   chartWeekly = new Chart(ctx1, { type:"line", data:{ labels, datasets:[{ label:"Penjualan", data:weeklyData, borderColor:"#c9922e", backgroundColor:"rgba(201,146,46,.15)", tension:.35, fill:true, pointRadius:3 }]}, options: chartOpts() });
 
