@@ -11,7 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --bg:#14100c;
@@ -1008,6 +1008,9 @@ function voidTransaction(id){
 ========================================================= */
 let chartWeekly, chartPayment, chartTopProduct;
 function renderDashboard(){
+  if (typeof Chart === "undefined") {
+    console.warn("Chart.js belum termuat, grafik dilewati sementara.");
+  }
   const today = todayStr();
   const todayTrx = Object.values(allTransactions||{}).filter(t=>t.date===today && t.status!=="void");
   const totalSales = todayTrx.reduce((s,t)=>s+t.total,0);
@@ -1026,6 +1029,7 @@ function renderDashboard(){
   const days = []; const labels=[];
   for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); const key=d.toISOString().slice(0,10); days.push(key); labels.push(d.toLocaleDateString("id-ID",{weekday:"short"})); }
   const weeklyData = days.map(dk => Object.values(allTransactions||{}).filter(t=>t.date===dk && t.status!=="void").reduce((s,t)=>s+t.total,0));
+  if (typeof Chart === "undefined") return; // library grafik belum siap, lewati render chart kali ini
   const ctx1 = document.getElementById("chartWeekly");
   if(chartWeekly) chartWeekly.destroy();
   chartWeekly = new Chart(ctx1, { type:"line", data:{ labels, datasets:[{ label:"Penjualan", data:weeklyData, borderColor:"#c9922e", backgroundColor:"rgba(201,146,46,.15)", tension:.35, fill:true, pointRadius:3 }]}, options: chartOpts() });
