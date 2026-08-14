@@ -36,6 +36,30 @@
   --font-ui:'Inter',sans-serif;
   --shadow:0 10px 30px rgba(0,0,0,.35);
 }
+body.theme-light{
+  --bg:#faf5ec;
+  --surface:#ffffff;
+  --surface-2:#f3ebdc;
+  --surface-3:#ece0cb;
+  --cream:#2a2015;
+  --cream-dim:#5a4b38;
+  --cream-faint:#8a7a63;
+  --accent:#b0742a;
+  --accent-2:#8f5c1f;
+  --terracotta:#9c5433;
+  --danger:#b1493d;
+  --danger-bg:#fbe6e2;
+  --success:#3f7a4d;
+  --success-bg:#e5f2e6;
+  --line:rgba(42,32,21,.12);
+  --line-strong:rgba(42,32,21,.22);
+  --shadow:0 10px 30px rgba(42,32,21,.10);
+}
+body.theme-light .brandmark{color:var(--accent-2);}
+body.theme-light .menuCard .photo{background:linear-gradient(135deg,var(--surface-2),var(--surface-3));}
+body.theme-light .switch .dot{background:#fff;}
+body.theme-light .switch.on .dot{background:#fff;}
+
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
 body{
@@ -97,6 +121,12 @@ a{color:var(--accent-2);}
 .btn-sm{padding:7px 12px;font-size:12.5px;border-radius:8px;}
 .loginErr{background:var(--danger-bg);color:#f0b3aa;border:1px solid rgba(192,86,74,.35);padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
 .loginFoot{text-align:center;margin-top:22px;font-size:11.5px;color:var(--cream-faint);letter-spacing:.05em;}
+.themeToggle{
+  display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line-strong);
+  color:var(--cream-dim);padding:8px 12px;border-radius:20px;font-size:12px;font-weight:600;
+}
+.themeToggle:hover{border-color:var(--accent);color:var(--accent-2);}
+.themeToggleFloat{position:absolute;top:20px;right:20px;z-index:2;}
 
 /* ---------- App shell ---------- */
 #appShell{display:none;min-height:100vh;}
@@ -273,6 +303,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
 
 <!-- ================= LOGIN ================= -->
 <div id="loginView" class="hidden">
+  <button class="themeToggle themeToggleFloat" id="themeBtnLogin" onclick="toggleTheme()">🌙 Mode Gelap</button>
   <div class="steamdot" style="width:340px;height:340px;top:-80px;left:-80px;"></div>
   <div class="steamdot" style="width:260px;height:260px;bottom:-60px;right:-60px;"></div>
   <div class="loginCard">
@@ -326,7 +357,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
           <div class="sub" id="viewSub">Ringkasan hari ini</div>
         </div>
       </div>
-      <div class="clock" id="clockBox">--:--:--</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button class="themeToggle" id="themeBtnApp" onclick="toggleTheme()">🌙 Mode Gelap</button>
+        <div class="clock" id="clockBox">--:--:--</div>
+      </div>
     </div>
     <div class="viewBody" id="viewBody">
       <!-- ===== DASHBOARD ===== -->
@@ -552,6 +586,28 @@ let lastTrxData = null;
 const PAY_METHODS = ["Cash","QRIS","Transfer","E-Wallet","Debit","Credit Card"];
 
 function fmtRp(n){ n = Math.round(n||0); return "Rp" + n.toLocaleString("id-ID"); }
+
+/* =========================================================
+   THEME (Mode Gelap / Mode Terang)
+========================================================= */
+function applyTheme(mode){
+  document.body.classList.toggle("theme-light", mode === "light");
+  const label = mode === "light" ? "🌙 Mode Gelap" : "☀️ Mode Terang";
+  const b1 = document.getElementById("themeBtnLogin"); if(b1) b1.textContent = label;
+  const b2 = document.getElementById("themeBtnApp"); if(b2) b2.textContent = label;
+  try{ localStorage.setItem("ngopi_theme", mode); }catch(e){}
+  if (typeof currentView !== "undefined" && currentView === "dashboard") renderDashboard();
+}
+function toggleTheme(){
+  const isLight = document.body.classList.contains("theme-light");
+  applyTheme(isLight ? "dark" : "light");
+}
+(function initTheme(){
+  let saved = "dark";
+  try{ saved = localStorage.getItem("ngopi_theme") || "dark"; }catch(e){}
+  applyTheme(saved);
+})();
+
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function pad2(n){ return n.toString().padStart(2,"0"); }
 function nowTimeStr(){ const d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes())+":"+pad2(d.getSeconds()); }
@@ -1039,7 +1095,7 @@ function renderDashboard(){
   todayTrx.forEach(t=>{ payAgg[t.payMethod]=(payAgg[t.payMethod]||0)+t.total; });
   const ctx2 = document.getElementById("chartPayment");
   if(chartPayment) chartPayment.destroy();
-  chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:["#c9922e","#a9583a","#5c9468","#8f8270","#c0564a","#e0ac4f"] }]}, options:{ ...chartOpts(), plugins:{legend:{position:"bottom", labels:{color:"#cabb9e"}}} } });
+  chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:["#c9922e","#a9583a","#5c9468","#8f8270","#c0564a","#e0ac4f"] }]}, options:{ ...chartOpts(), plugins:{legend:{position:"bottom", labels:{color:getComputedStyle(document.body).getPropertyValue("--cream-dim").trim()||"#cabb9e"}}} } });
 
   // top product 7 days
   const weekTrx = Object.values(allTransactions||{}).filter(t=>days.includes(t.date) && t.status!=="void");
@@ -1051,8 +1107,11 @@ function renderDashboard(){
   chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor:"#a9583a", borderRadius:6 }]}, options: { ...chartOpts(), indexAxis:"y" } });
 }
 function chartOpts(){
+  const cs = getComputedStyle(document.body);
+  const faint = cs.getPropertyValue("--cream-faint").trim() || "#8f8270";
+  const lineColor = document.body.classList.contains("theme-light") ? "rgba(42,32,21,.08)" : "rgba(244,234,216,.06)";
   return { responsive:true, maintainAspectRatio:false,
-    scales:{ x:{ ticks:{color:"#8f8270"}, grid:{color:"rgba(244,234,216,.06)"} }, y:{ ticks:{color:"#8f8270"}, grid:{color:"rgba(244,234,216,.06)"} } },
+    scales:{ x:{ ticks:{color:faint}, grid:{color:lineColor} }, y:{ ticks:{color:faint}, grid:{color:lineColor} } },
     plugins:{ legend:{display:false} } };
 }
 
