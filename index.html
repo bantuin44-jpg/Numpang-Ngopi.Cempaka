@@ -14,6 +14,46 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 <style>
 :root{
+  /* Default = Mode Berwarna (terang, colorful — seperti dashboard referensi) */
+  --bg:#eef1f7;
+  --surface:#ffffff;
+  --surface-2:#f5f7fb;
+  --surface-3:#eaedf6;
+  --cream:#1e2433;
+  --cream-dim:#5c6478;
+  --cream-faint:#98a1b5;
+  --accent:#e08a1e;
+  --accent-2:#c9761a;
+  --terracotta:#c2410c;
+  --danger:#e11d48;
+  --danger-bg:#fde2e8;
+  --success:#16a34a;
+  --success-bg:#dcfce8;
+  --line:rgba(30,36,51,.08);
+  --line-strong:rgba(30,36,51,.16);
+  --radius:14px;
+  --font-display:'Fraunces',serif;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-ui:'Inter',sans-serif;
+  --shadow:0 10px 30px rgba(30,36,51,.10);
+
+  /* Sidebar & kartu statistik: warna solid khas, terpisah dari token utama
+     supaya tetap kontras & "berwarna" di kedua mode */
+  --sidebar-bg:#7c2d12;
+  --sidebar-bg-2:#9a3412;
+  --sidebar-text:#fdf3ea;
+  --sidebar-text-dim:rgba(253,243,234,.68);
+  --sidebar-active-bg:rgba(255,255,255,.16);
+  --sidebar-line:rgba(255,255,255,.14);
+  --topbar-bg:rgba(255,255,255,.85);
+
+  --sc1-a:#2563eb; --sc1-b:#1d4ed8; /* biru — penjualan */
+  --sc2-a:#059669; --sc2-b:#047857; /* hijau — transaksi */
+  --sc3-a:#d97706; --sc3-b:#b45309; /* oranye — produk terlaris */
+  --sc4-a:#e11d48; --sc4-b:#be123c; /* merah — rata-rata */
+}
+body.theme-dark{
+  /* Mode Gelap (opsional, tema lama) */
   --bg:#14100c;
   --surface:#1c1610;
   --surface-2:#251c14;
@@ -30,35 +70,19 @@
   --success-bg:#1e2b1e;
   --line:rgba(244,234,216,.12);
   --line-strong:rgba(244,234,216,.22);
-  --radius:14px;
-  --font-display:'Fraunces',serif;
-  --font-mono:'IBM Plex Mono',monospace;
-  --font-ui:'Inter',sans-serif;
   --shadow:0 10px 30px rgba(0,0,0,.35);
+  --sidebar-bg:#241209;
+  --sidebar-bg-2:#3a1c0c;
+  --sidebar-text:#f4ead8;
+  --sidebar-text-dim:rgba(244,234,216,.6);
+  --sidebar-active-bg:rgba(255,255,255,.08);
+  --sidebar-line:rgba(244,234,216,.12);
+  --topbar-bg:rgba(20,16,12,.85);
 }
-body.theme-light{
-  --bg:#faf5ec;
-  --surface:#ffffff;
-  --surface-2:#f3ebdc;
-  --surface-3:#ece0cb;
-  --cream:#2a2015;
-  --cream-dim:#5a4b38;
-  --cream-faint:#8a7a63;
-  --accent:#b0742a;
-  --accent-2:#8f5c1f;
-  --terracotta:#9c5433;
-  --danger:#b1493d;
-  --danger-bg:#fbe6e2;
-  --success:#3f7a4d;
-  --success-bg:#e5f2e6;
-  --line:rgba(42,32,21,.12);
-  --line-strong:rgba(42,32,21,.22);
-  --shadow:0 10px 30px rgba(42,32,21,.10);
-}
-body.theme-light .brandmark{color:var(--accent-2);}
-body.theme-light .menuCard .photo{background:linear-gradient(135deg,var(--surface-2),var(--surface-3));}
-body.theme-light .switch .dot{background:#fff;}
-body.theme-light .switch.on .dot{background:#fff;}
+body.theme-dark .brandmark{color:var(--accent-2);}
+body.theme-dark .menuCard .photo{background:linear-gradient(135deg,var(--surface-2),var(--surface-3));}
+body.theme-dark .switch .dot{background:var(--cream);}
+body.theme-dark .switch.on .dot{background:#1a1207;}
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -132,31 +156,35 @@ a{color:var(--accent-2);}
 #appShell{display:none;min-height:100vh;}
 #appShell.active{display:flex;}
 .sidebar{
-  width:230px;flex:none;background:var(--surface);border-right:1px solid var(--line);
+  width:230px;flex:none;
+  background:linear-gradient(165deg,var(--sidebar-bg),var(--sidebar-bg-2));
+  border-right:1px solid var(--sidebar-line);
   display:flex;flex-direction:column;padding:22px 14px;position:sticky;top:0;height:100vh;
 }
-.sidebarLogo{padding:0 8px 20px;border-bottom:1px solid var(--line);margin-bottom:16px;}
-.sidebarLogo .script{font-family:var(--font-display);font-style:italic;color:var(--accent-2);font-size:14px;display:block;}
-.sidebarLogo .big{font-family:var(--font-display);font-weight:900;font-size:24px;color:var(--cream);display:block;line-height:1.1;}
-.sidebarLogo .tag{font-size:9.5px;color:var(--cream-faint);letter-spacing:.12em;text-transform:uppercase;margin-top:4px;display:block;}
+.sidebarLogo{padding:0 8px 20px;border-bottom:1px solid var(--sidebar-line);margin-bottom:16px;}
+.sidebarLogo .script{font-family:var(--font-display);font-style:italic;color:#fbd7a8;font-size:14px;display:block;}
+.sidebarLogo .big{font-family:var(--font-display);font-weight:900;font-size:24px;color:var(--sidebar-text);display:block;line-height:1.1;}
+.sidebarLogo .tag{font-size:9.5px;color:var(--sidebar-text-dim);letter-spacing:.12em;text-transform:uppercase;margin-top:4px;display:block;}
 .navGroup{margin-bottom:4px;}
 .navItem{
-  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--cream-dim);
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--sidebar-text-dim);
   font-size:13.5px;font-weight:500;cursor:pointer;margin-bottom:2px;transition:background .12s,color .12s;
 }
-.navItem:hover{background:var(--surface-2);color:var(--cream);}
-.navItem.active{background:var(--surface-3);color:var(--accent-2);}
+.navItem:hover{background:rgba(255,255,255,.08);color:var(--sidebar-text);}
+.navItem.active{background:var(--sidebar-active-bg);color:var(--sidebar-text);box-shadow:inset 3px 0 0 #fbd7a8;}
 .navItem .ic{width:18px;text-align:center;font-size:15px;}
-.sidebarFoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);}
+.sidebarFoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--sidebar-line);}
 .userChip{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;}
-.avatar{width:34px;height:34px;border-radius:50%;background:var(--surface-3);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;color:var(--accent-2);flex:none;}
-.userChip .un{font-size:13px;font-weight:600;color:var(--cream);}
-.userChip .ur{font-size:11px;color:var(--cream-faint);text-transform:capitalize;}
+.avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid var(--sidebar-line);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;color:var(--sidebar-text);flex:none;}
+.userChip .un{font-size:13px;font-weight:600;color:var(--sidebar-text);}
+.userChip .ur{font-size:11px;color:var(--sidebar-text-dim);text-transform:capitalize;}
+.sidebarFoot .btn-ghost{border-color:var(--sidebar-line);color:var(--sidebar-text);}
+.sidebarFoot .btn-ghost:hover{border-color:#fbd7a8;color:#fbd7a8;}
 
 .mainArea{flex:1;min-width:0;height:100vh;overflow-y:auto;}
 .topbar{
   position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
-  padding:16px 26px;background:rgba(20,16,12,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  padding:16px 26px;background:var(--topbar-bg);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
 }
 .topbar h1{font-family:var(--font-display);font-size:21px;font-weight:700;margin:0;}
 .topbar .sub{font-size:12px;color:var(--cream-faint);margin-top:2px;}
@@ -175,6 +203,16 @@ a{color:var(--accent-2);}
 .statCard .val{font-family:var(--font-mono);font-weight:600;font-size:24px;color:var(--cream);}
 .statCard .sub{font-size:11.5px;color:var(--accent-2);margin-top:6px;}
 .statCard .ic{position:absolute;right:14px;top:14px;font-size:26px;opacity:.18;}
+/* Kartu statistik berwarna solid (dashboard) */
+.statCard.sc-color{border:none;color:#fff;box-shadow:0 12px 24px -10px rgba(0,0,0,.28);}
+.statCard.sc-color .lbl{color:rgba(255,255,255,.82);}
+.statCard.sc-color .val{color:#fff;}
+.statCard.sc-color .sub{color:rgba(255,255,255,.88);}
+.statCard.sc-color .ic{opacity:.32;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));}
+.statCard.sc1{background:linear-gradient(135deg,var(--sc1-a),var(--sc1-b));}
+.statCard.sc2{background:linear-gradient(135deg,var(--sc2-a),var(--sc2-b));}
+.statCard.sc3{background:linear-gradient(135deg,var(--sc3-a),var(--sc3-b));}
+.statCard.sc4{background:linear-gradient(135deg,var(--sc4-a),var(--sc4-b));}
 
 /* Tables */
 .tblwrap{overflow-x:auto;}
@@ -366,10 +404,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
       <!-- ===== DASHBOARD ===== -->
       <div id="view-dashboard" class="viewpane hidden">
         <div class="grid g4" style="margin-bottom:18px;">
-          <div class="card statCard"><div class="ic">💰</div><div class="lbl">Penjualan Hari Ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div></div>
-          <div class="card statCard"><div class="ic">🧾</div><div class="lbl">Jumlah Transaksi</div><div class="val" id="dashTrx">0</div><div class="sub">Hari ini</div></div>
-          <div class="card statCard"><div class="ic">⭐</div><div class="lbl">Produk Terlaris</div><div class="val" id="dashTop" style="font-size:16px;">-</div><div class="sub" id="dashTopSub">-</div></div>
-          <div class="card statCard"><div class="ic">📊</div><div class="lbl">Rata-rata Transaksi</div><div class="val" id="dashAvg">Rp0</div><div class="sub">Per struk</div></div>
+          <div class="card statCard sc-color sc1"><div class="ic">💰</div><div class="lbl">Penjualan Hari Ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div></div>
+          <div class="card statCard sc-color sc2"><div class="ic">🧾</div><div class="lbl">Jumlah Transaksi</div><div class="val" id="dashTrx">0</div><div class="sub">Hari ini</div></div>
+          <div class="card statCard sc-color sc3"><div class="ic">⭐</div><div class="lbl">Produk Terlaris</div><div class="val" id="dashTop" style="font-size:16px;">-</div><div class="sub" id="dashTopSub">-</div></div>
+          <div class="card statCard sc-color sc4"><div class="ic">📊</div><div class="lbl">Rata-rata Transaksi</div><div class="val" id="dashAvg">Rp0</div><div class="sub">Per struk</div></div>
         </div>
         <div class="grid g2">
           <div class="card"><h3 style="margin-top:0;font-family:var(--font-display);">Penjualan 7 Hari</h3><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
@@ -487,10 +525,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
           </div>
         </div>
         <div class="grid g4" style="margin-bottom:16px;">
-          <div class="card statCard"><div class="lbl">Total Penjualan</div><div class="val" id="lapTotal">Rp0</div></div>
-          <div class="card statCard"><div class="lbl">Jumlah Transaksi</div><div class="val" id="lapCount">0</div></div>
-          <div class="card statCard"><div class="lbl">Rata-rata</div><div class="val" id="lapAvg">Rp0</div></div>
-          <div class="card statCard"><div class="lbl">Item Terjual</div><div class="val" id="lapItems">0</div></div>
+          <div class="card statCard sc-color sc1"><div class="ic">💰</div><div class="lbl">Total Penjualan</div><div class="val" id="lapTotal">Rp0</div></div>
+          <div class="card statCard sc-color sc2"><div class="ic">🧾</div><div class="lbl">Jumlah Transaksi</div><div class="val" id="lapCount">0</div></div>
+          <div class="card statCard sc-color sc3"><div class="ic">📊</div><div class="lbl">Rata-rata</div><div class="val" id="lapAvg">Rp0</div></div>
+          <div class="card statCard sc-color sc4"><div class="ic">📦</div><div class="lbl">Item Terjual</div><div class="val" id="lapItems">0</div></div>
         </div>
         <div class="tabbar">
           <button class="tabbtn active" data-ltab="penjualan" onclick="switchLapTab('penjualan')">Penjualan</button>
@@ -592,8 +630,8 @@ function fmtRp(n){ n = Math.round(n||0); return "Rp" + n.toLocaleString("id-ID")
    THEME (Mode Gelap / Mode Terang)
 ========================================================= */
 function applyTheme(mode){
-  document.body.classList.toggle("theme-light", mode === "light");
-  const label = mode === "light" ? "🌙 Mode Gelap" : "☀️ Mode Terang";
+  document.body.classList.toggle("theme-dark", mode === "dark");
+  const label = mode === "dark" ? "🎨 Mode Berwarna" : "🌙 Mode Gelap";
   const b1 = document.getElementById("themeBtnLogin"); if(b1) b1.textContent = label;
   const b2 = document.getElementById("themeBtnApp"); if(b2) b2.textContent = label;
   try{ localStorage.setItem("ngopi_theme", mode); }catch(e){}
@@ -604,12 +642,12 @@ function applyTheme(mode){
   if (appActive && currentView === "dashboard") renderDashboard();
 }
 function toggleTheme(){
-  const isLight = document.body.classList.contains("theme-light");
-  applyTheme(isLight ? "dark" : "light");
+  const isDark = document.body.classList.contains("theme-dark");
+  applyTheme(isDark ? "light" : "dark");
 }
 (function initTheme(){
-  let saved = "dark";
-  try{ saved = localStorage.getItem("ngopi_theme") || "dark"; }catch(e){}
+  let saved = "light";
+  try{ saved = localStorage.getItem("ngopi_theme") || "light"; }catch(e){}
   applyTheme(saved);
 })();
 
@@ -1092,14 +1130,14 @@ function renderDashboard(){
   const ctx1 = document.getElementById("chartWeekly");
   if(typeof Chart === "undefined" || !ctx1) return; // library grafik belum siap atau canvas belum ada, lewati render chart kali ini
   if(chartWeekly) chartWeekly.destroy();
-  chartWeekly = new Chart(ctx1, { type:"line", data:{ labels, datasets:[{ label:"Penjualan", data:weeklyData, borderColor:"#c9922e", backgroundColor:"rgba(201,146,46,.15)", tension:.35, fill:true, pointRadius:3 }]}, options: chartOpts() });
+  chartWeekly = new Chart(ctx1, { type:"line", data:{ labels, datasets:[{ label:"Penjualan", data:weeklyData, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.14)", tension:.35, fill:true, pointRadius:3 }]}, options: chartOpts() });
 
   // payment method chart (today)
   const payAgg = {};
   todayTrx.forEach(t=>{ payAgg[t.payMethod]=(payAgg[t.payMethod]||0)+t.total; });
   const ctx2 = document.getElementById("chartPayment");
   if(chartPayment) chartPayment.destroy();
-  chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:["#c9922e","#a9583a","#5c9468","#8f8270","#c0564a","#e0ac4f"] }]}, options:{ ...chartOpts(), plugins:{legend:{position:"bottom", labels:{color:getComputedStyle(document.body).getPropertyValue("--cream-dim").trim()||"#cabb9e"}}} } });
+  chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:["#2563eb","#d97706","#059669","#e11d48","#7c3aed","#0891b2"] }]}, options:{ ...chartOpts(), plugins:{legend:{position:"bottom", labels:{color:getComputedStyle(document.body).getPropertyValue("--cream-dim").trim()||"#5c6478"}}} } });
 
   // top product 7 days
   const weekTrx = Object.values(allTransactions||{}).filter(t=>days.includes(t.date) && t.status!=="void");
@@ -1108,7 +1146,7 @@ function renderDashboard(){
   const topProds = Object.entries(prodAgg).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const ctx3 = document.getElementById("chartTopProduct");
   if(chartTopProduct) chartTopProduct.destroy();
-  chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor:"#a9583a", borderRadius:6 }]}, options: { ...chartOpts(), indexAxis:"y" } });
+  chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor:"#d97706", borderRadius:6 }]}, options: { ...chartOpts(), indexAxis:"y" } });
 }
 function chartOpts(){
   const cs = getComputedStyle(document.body);
