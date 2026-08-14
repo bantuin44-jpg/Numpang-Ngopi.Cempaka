@@ -580,11 +580,32 @@ auth.onAuthStateChanged(user => {
   document.getElementById("bootLoader").classList.add("hidden");
   if (user) {
     db.ref("users/"+user.uid).once("value").then(snap=>{
-      const u = snap.val();
+      let u = snap.val();
       if (!u) {
-        showLoginErr("Akun ditemukan di Firebase Auth tetapi belum terdaftar di database. Hubungi admin.");
-        auth.signOut();
-        return;
+        // Belum ada data pengguna di database.
+        // Jika ini pengguna PERTAMA yang pernah login (belum ada admin/kasir sama sekali),
+        // otomatis daftarkan sebagai Admin/Owner agar tidak terkunci di luar sistem.
+        return db.ref("users").once("value").then(allSnap=>{
+          const noUsersYet = !allSnap.exists() || allSnap.numChildren()===0;
+          if (noUsersYet) {
+            const bootstrapData = {
+              name: user.email.split("@")[0],
+              email: user.email,
+              role: "admin",
+              allowDiscount: true,
+              active: true,
+              createdAt: Date.now()
+            };
+            return db.ref("users/"+user.uid).set(bootstrapData).then(()=>{
+              currentUser = { uid:user.uid, email:user.email, name:bootstrapData.name, role:"admin", allowDiscount:true, active:true };
+              toast("Akun admin pertama berhasil dibuat otomatis. Selamat datang!", "ok");
+              enterApp();
+            });
+          } else {
+            showLoginErr("Akun ditemukan di Firebase Auth tetapi belum terdaftar di database. Hubungi admin untuk ditambahkan lewat menu Pengguna.");
+            auth.signOut();
+          }
+        });
       }
       if (u.active === false) {
         showLoginErr("Akun Anda dinonaktifkan. Hubungi admin.");
