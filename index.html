@@ -494,10 +494,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
             <div class="sumRow total"><span>Total</span><span id="sumTotal">Rp0</span></div>
             <div class="payGrid" id="payGrid"></div>
             <div class="field" style="margin-top:2px;">
-              <label>Jumlah Bayar</label>
+              <label id="payAmountLabel">Jumlah Bayar</label>
               <input type="number" id="payAmountInput" placeholder="0" min="0" oninput="updateChange()">
             </div>
-            <div class="sumRow" style="font-weight:600;"><span>Kembalian</span><span class="mono" id="sumChange">Rp0</span></div>
+            <div class="sumRow" id="changeRow" style="font-weight:600;"><span>Kembalian</span><span class="mono" id="sumChange">Rp0</span></div>
             <button class="btn btn-primary" style="margin-top:10px;" onclick="submitTransaction()">✔ Selesaikan Transaksi</button>
           </div>
         </div>
@@ -714,7 +714,7 @@ let editingProdId = null, editingCatId = null, editingUserId = null;
 let lastTrxData = null;
 let chartWeekly = null, chartPayment = null, chartTopProduct = null;
 
-const PAY_METHODS = ["Cash","QRIS","Transfer","E-Wallet","Debit","Credit Card"];
+const PAY_METHODS = ["Cash","QRIS","Tagihan"];
 const ORDER_TYPES = ["Takeaway","Dine In"];
 
 function fmtRp(n){ n = Math.round(n||0); return "Rp" + n.toLocaleString("id-ID"); }
@@ -1074,9 +1074,28 @@ function buildPayGrid(){
     const b = document.createElement("div");
     b.className = "payBtn" + (m===selectedPayMethod?" active":"");
     b.textContent = m;
-    b.onclick = ()=>{ selectedPayMethod = m; buildPayGrid(); };
+    b.onclick = ()=>{ selectedPayMethod = m; buildPayGrid(); syncPayAmountField(); };
     wrap.appendChild(b);
   });
+  syncPayAmountField();
+}
+function syncPayAmountField(){
+  const input = document.getElementById("payAmountInput");
+  const label = document.getElementById("payAmountLabel");
+  const changeRow = document.getElementById("changeRow");
+  if(!input) return;
+  if(selectedPayMethod === "Tagihan"){
+    input.value = 0;
+    input.disabled = true;
+    input.placeholder = "Belum dibayar (Tagihan)";
+    if(label) label.textContent = "Jumlah Bayar (Tagihan / belum dibayar)";
+    if(changeRow) changeRow.classList.add("hidden");
+  } else {
+    input.disabled = false;
+    if(label) label.textContent = "Jumlah Bayar";
+    if(changeRow) changeRow.classList.remove("hidden");
+  }
+  updateChange();
 }
 function buildOrderTypeGrid(){
   const wrap = document.getElementById("orderTypeGrid");
@@ -1141,6 +1160,10 @@ function updateChange(){
   const sub = cartSubtotal();
   const disc = currentDiscount(sub);
   const total = Math.max(sub - disc, 0);
+  if(selectedPayMethod === "Tagihan"){
+    document.getElementById("sumChange").textContent = fmtRp(0);
+    return;
+  }
   const pay = Number(document.getElementById("payAmountInput").value||0);
   const change = pay - total;
   document.getElementById("sumChange").textContent = fmtRp(Math.max(change,0));
@@ -1155,9 +1178,11 @@ function submitTransaction(){
   const sub = cartSubtotal();
   const disc = currentDiscount(sub);
   const total = Math.max(sub - disc, 0);
-  const pay = Number(document.getElementById("payAmountInput").value||0);
-  if(pay < total){ toast("Jumlah bayar kurang dari total.", "err"); return; }
-  const change = pay - total;
+  const isTagihan = selectedPayMethod === "Tagihan";
+  let pay = Number(document.getElementById("payAmountInput").value||0);
+  if(!isTagihan && pay < total){ toast("Jumlah bayar kurang dari total.", "err"); return; }
+  if(isTagihan) pay = 0;
+  const change = isTagihan ? 0 : pay - total;
 
   const dateKey = todayStr().replace(/-/g,"");
   const counterRef = db.ref("counters/"+dateKey);
