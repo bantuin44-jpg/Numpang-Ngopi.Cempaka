@@ -225,6 +225,36 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .badge-void{background:var(--danger-bg);color:#f0b3aa;}
 .badge-admin{background:rgba(201,146,46,.15);color:var(--accent-2);}
 .badge-kasir{background:rgba(244,234,216,.08);color:var(--cream-dim);}
+.badge-dapur{background:rgba(217,119,6,.15);color:#d97706;}
+.badge-bar{background:rgba(37,99,235,.15);color:#2563eb;}
+
+/* ---------- Kitchen Display (Dapur) ---------- */
+.dapurToolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.dapurStatusChip{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--cream-dim);}
+.dapurStatusChip .dot{width:9px;height:9px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px var(--success-bg);}
+.kdsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.kdsCard{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);transition:border-color .2s;}
+.kdsCard.new{border-color:var(--danger);animation:kdsPulse 1.1s ease-in-out infinite;}
+.kdsCard.proses{border-color:var(--accent);}
+@keyframes kdsPulse{0%,100%{box-shadow:0 0 0 0 rgba(225,29,72,.35);}50%{box-shadow:0 0 0 10px rgba(225,29,72,0);}}
+.kdsHead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.kdsMeja{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--cream);}
+.kdsTrx{font-family:var(--font-mono);font-size:11px;color:var(--cream-faint);}
+.kdsTimer{font-family:var(--font-mono);font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--surface-2);color:var(--cream-dim);white-space:nowrap;}
+.kdsTimer.late{background:var(--danger-bg);color:var(--danger);}
+.kdsItems{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.kdsItems li{display:flex;justify-content:space-between;gap:10px;font-size:14.5px;color:var(--cream);padding-bottom:6px;border-bottom:1px dashed var(--line);}
+.kdsItems li:last-child{border-bottom:none;padding-bottom:0;}
+.kdsItems .qty{font-family:var(--font-mono);font-weight:700;color:var(--accent-2);min-width:26px;}
+.kdsNote{font-size:12.5px;color:var(--terracotta);background:var(--danger-bg);padding:6px 10px;border-radius:8px;}
+.kdsActions{display:flex;gap:8px;margin-top:4px;}
+.kdsActions .btn{flex:1;padding:11px;font-size:13.5px;}
+.kdsEmpty{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--cream-faint);}
+.kdsEmpty .ic{font-size:48px;margin-bottom:12px;}
+.belFloatBtn{position:fixed;right:26px;bottom:26px;z-index:40;width:60px;height:60px;border-radius:50%;background:var(--danger);color:#fff;border:none;font-size:24px;box-shadow:0 8px 22px rgba(225,29,72,.4);display:flex;align-items:center;justify-content:center;}
+.belFloatBtn:active{transform:scale(.94);}
+.belFlash{animation:belFlashAnim 1s ease-in-out infinite;}
+@keyframes belFlashAnim{0%,100%{background:var(--bg);}50%{background:rgba(225,29,72,.18);}}
 
 /* Buttons row */
 .rowActions{display:flex;gap:8px;flex-wrap:wrap;}
@@ -510,6 +540,19 @@ tr:hover td{background:rgba(244,234,216,.02);}
         </div>
       </div>
 
+      <!-- ===== LAYAR DAPUR (KDS) ===== -->
+      <div id="view-dapur" class="viewpane hidden">
+        <div class="dapurToolbar">
+          <div class="dapurStatusChip"><span class="dot"></span><span id="kdsCountLbl">0 pesanan menunggu</span></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--cream-dim);">
+              <input type="checkbox" id="kdsSoundToggle" checked onchange="kdsSoundEnabled=this.checked;"> 🔊 Suara notifikasi
+            </label>
+          </div>
+        </div>
+        <div class="kdsGrid" id="kdsGrid"></div>
+      </div>
+
       <!-- ===== RIWAYAT ===== -->
       <div id="view-riwayat" class="viewpane hidden">
         <div class="toolbar">
@@ -551,7 +594,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
         <div id="menuTab-kategori" class="hidden">
           <div class="toolbar"><div></div><button class="btn btn-primary btn-sm" onclick="openKategoriModal()">+ Tambah Kategori</button></div>
           <div class="card"><div class="tblwrap"><table>
-            <thead><tr><th>Ikon</th><th>Nama</th><th>Urutan</th><th></th></tr></thead>
+            <thead><tr><th>Ikon</th><th>Nama</th><th>Urutan</th><th>Stasiun</th><th></th></tr></thead>
             <tbody id="kategoriBody"></tbody>
           </table></div></div>
         </div>
@@ -670,6 +713,8 @@ tr:hover td{background:rgba(244,234,216,.02);}
     </div>
   </div>
 </div>
+
+<button id="belFloatBtn" class="belFloatBtn hidden" title="Bel Dapur — panggil perhatian dapur" onclick="belDapurManual()">🔔</button>
 
 <div class="toastWrap" id="toastWrap"></div>
 <div id="modalRoot"></div>
@@ -856,6 +901,7 @@ document.getElementById("loginPass")?.addEventListener("keydown", e=>{ if(e.key=
 const NAV_ITEMS = [
   {id:"dashboard", label:"Dashboard", ic:"📊", roles:["admin"]},
   {id:"pos", label:"Transaksi", ic:"🛒", roles:["admin","kasir"]},
+  {id:"dapur", label:"Layar Dapur", ic:"🍳", roles:["admin","kasir"]},
   {id:"riwayat", label:"Riwayat Transaksi", ic:"🧾", roles:["admin","kasir"]},
   {id:"laporan", label:"Laporan", ic:"📈", roles:["admin"]},
   {id:"menu", label:"Master Menu", ic:"☕", roles:["admin"]},
@@ -897,6 +943,7 @@ function enterApp(){
 const VIEW_META = {
   dashboard:["Dashboard","Ringkasan performa toko hari ini"],
   pos:["Transaksi","Buat pesanan dan proses pembayaran"],
+  dapur:["Layar Dapur","Pesanan masuk secara realtime"],
   riwayat:["Riwayat Transaksi","Daftar transaksi yang tercatat"],
   laporan:["Laporan","Analisis penjualan, produk, kasir & pembayaran"],
   menu:["Master Menu","Kelola produk dan kategori"],
@@ -914,12 +961,14 @@ function switchView(id){
   toggleSidebar(false);
   if(id==="dashboard") renderDashboard();
   if(id==="pos") renderMenuGrid();
+  if(id==="dapur") { renderDapur(); markKdsSeen(); }
   if(id==="riwayat") renderRiwayat();
   if(id==="menu") { renderProdukTable(); renderKategoriTable(); }
   if(id==="stok") { renderStokTable(); renderStokMovements(); }
   if(id==="users") renderUsersTable();
   if(id==="laporan") runLaporan();
   if(id==="settings") fillSettingsForm();
+  document.getElementById("belFloatBtn")?.classList.toggle("hidden", id==="dapur");
 }
 function toggleSidebar(open){
   document.getElementById("sidebar").classList.toggle("open", !!open);
@@ -943,6 +992,7 @@ function bindListeners(){
   db.ref("active_tables").on("value", snap=>{ activeTables = snap.val()||{}; if(currentView==="pos" && orderType==="Dine In") buildMejaGrid(); }, onFirebaseErr("status meja"));
   db.ref("stock_movements").on("value", snap=>{ stockMovements = snap.val()||{}; if(currentView==="stok") renderStokMovements(); }, onFirebaseErr("pergerakan stok"));
   db.ref("settings").on("value", snap=>{ const s = snap.val(); if(s) settings = {...settings, ...s}; if(currentView==="settings") fillSettingsForm(); }, onFirebaseErr("pengaturan toko"));
+  bindKitchenListeners();
 }
 
 function logActivity(action, detail){
@@ -1230,6 +1280,25 @@ function submitTransaction(){
     updates["transactions/"+trxRef.key] = trxData;
     if(orderType==="Dine In" && selectedMeja){
       updates["active_tables/"+selectedMeja] = { trxId: trxRef.key, trxNo, kasirName: currentUser.name, since: Date.now() };
+    }
+    // Item yang stasiunnya "dapur" (perlu dimasak) dikirim realtime ke Layar Dapur.
+    // Item kategori "bar" (mis. kopi/minuman) tidak dikirim karena barista sudah di sebelah kasir.
+    const kitchenItems = items.filter(it=>{
+      const p = products[it.productId];
+      const cat = p ? categories[p.category] : null;
+      return !cat || cat.station !== "bar";
+    });
+    let kitchenRef = null;
+    if(kitchenItems.length > 0){
+      kitchenRef = db.ref("kitchen_orders").push();
+      updates["kitchen_orders/"+kitchenRef.key] = {
+        trxNo, trxId: trxRef.key,
+        orderType: orderType, mejaNo: orderType==="Dine In" ? selectedMeja : null,
+        items: kitchenItems.map(it=>({ name: it.name, qty: it.qty, modifiers: it.modifiers||[] })),
+        status: "baru",
+        createdAt: Date.now(),
+        kasirName: currentUser.name
+      };
     }
     cart.forEach(c=>{
       const p = products[c.id];
@@ -1580,9 +1649,10 @@ function renderKategoriTable(){
   const tbody = document.getElementById("kategoriBody");
   if(!tbody) return;
   const entries = Object.entries(categories).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
-  if(entries.length===0){ tbody.innerHTML=`<tr><td colspan="4"><div class="emptystate"><div class="ic">🗂️</div>Belum ada kategori.</div></td></tr>`; return; }
+  if(entries.length===0){ tbody.innerHTML=`<tr><td colspan="5"><div class="emptystate"><div class="ic">🗂️</div>Belum ada kategori.</div></td></tr>`; return; }
   tbody.innerHTML = entries.map(([id,c])=>`
     <tr><td style="font-size:18px;">${c.icon||"☕"}</td><td>${c.name}</td><td class="mono">${c.order??0}</td>
+    <td>${c.station==="bar" ? '<span class="badge badge-bar">🥤 Bar</span>' : '<span class="badge badge-dapur">🍳 Dapur</span>'}</td>
     <td><div class="rowActions">
       <button class="btn btn-ghost btn-sm" onclick='openKategoriModal("${id}")'>Edit</button>
       <button class="btn btn-danger btn-sm" onclick='deleteKategori("${id}")'>Hapus</button>
@@ -1590,12 +1660,19 @@ function renderKategoriTable(){
 }
 function openKategoriModal(id){
   editingCatId = id||null;
-  const c = id ? categories[id] : { name:"", icon:"☕", order:Object.keys(categories).length };
+  const c = id ? categories[id] : { name:"", icon:"☕", order:Object.keys(categories).length, station:"dapur" };
   const body = `
     <div class="formGrid">
       <div class="field"><label>Nama Kategori</label><input id="fCatName" value="${c.name||""}"></div>
       <div class="field"><label>Ikon (emoji)</label><input id="fCatIcon" value="${c.icon||"☕"}"></div>
-      <div class="field full"><label>Urutan Tampil</label><input type="number" id="fCatOrder" value="${c.order??0}"></div>
+      <div class="field"><label>Urutan Tampil</label><input type="number" id="fCatOrder" value="${c.order??0}"></div>
+      <div class="field">
+        <label>Stasiun Pembuatan</label>
+        <select id="fCatStation">
+          <option value="dapur" ${c.station!=="bar"?"selected":""}>🍳 Dapur (perlu dimasak, tampil di layar dapur)</option>
+          <option value="bar" ${c.station==="bar"?"selected":""}>🥤 Bar / Barista (langsung dibuat kasir, tidak perlu ke dapur)</option>
+        </select>
+      </div>
     </div>`;
   openModal(id?"Edit Kategori":"Tambah Kategori", body, [
     {label:"Batal", cls:"btn-ghost", onclick:"closeModal()"},
@@ -1605,13 +1682,151 @@ function openKategoriModal(id){
 function saveKategori(){
   const name = document.getElementById("fCatName").value.trim();
   if(!name){ toast("Nama kategori wajib diisi.", "err"); return; }
-  const data = { name, icon: document.getElementById("fCatIcon").value.trim()||"☕", order: Number(document.getElementById("fCatOrder").value)||0 };
+  const data = { name, icon: document.getElementById("fCatIcon").value.trim()||"☕", order: Number(document.getElementById("fCatOrder").value)||0, station: document.getElementById("fCatStation").value==="bar" ? "bar" : "dapur" };
   const ref = editingCatId ? db.ref("categories/"+editingCatId) : db.ref("categories").push();
   ref.set(data).then(()=>{ toast("Kategori disimpan.", "ok"); closeModal(); });
 }
 function deleteKategori(id){
   if(!confirm("Hapus kategori ini?")) return;
   db.ref("categories/"+id).remove().then(()=>toast("Kategori dihapus.", "ok"));
+}
+
+/* =========================================================
+   LAYAR DAPUR (KITCHEN DISPLAY SYSTEM / KDS)
+   - Item dari kategori berstasiun "dapur" otomatis masuk realtime ke sini
+     saat transaksi disimpan (lihat submitTransaction()).
+   - Alarm suara berbunyi otomatis saat pesanan baru masuk, dan diulang
+     berkala selama masih ada pesanan berstatus "baru" yang belum disentuh.
+   - Tombol 🔔 Bel Dapur (mengambang di semua halaman kasir) untuk
+     memanggil perhatian dapur secara manual, jaga-jaga notifikasi
+     otomatis tidak terdengar.
+========================================================= */
+let kitchenOrders = {};
+let kdsSoundEnabled = true;
+let kdsAlarmTimer = null;
+let kdsAudioCtx = null;
+
+function ensureKdsAudioCtx(){
+  if(!kdsAudioCtx){
+    try{ kdsAudioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ kdsAudioCtx = null; }
+  }
+  return kdsAudioCtx;
+}
+// Browser memblokir audio otomatis sebelum ada interaksi user; sentuhan/klik pertama membuka jalan.
+document.addEventListener("click", ()=>{
+  const ctx = ensureKdsAudioCtx();
+  if(ctx && ctx.state==="suspended") ctx.resume();
+}, { once:true });
+
+function playKdsBeep(times, freq){
+  if(!kdsSoundEnabled) return;
+  const ctx = ensureKdsAudioCtx();
+  if(!ctx) return;
+  if(ctx.state==="suspended") ctx.resume();
+  let t = ctx.currentTime;
+  for(let i=0;i<(times||1);i++){
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq||880, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.4, t+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t+0.28);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.3);
+    t += 0.36;
+  }
+}
+
+function bindKitchenListeners(){
+  db.ref("kitchen_orders").on("value", snap=>{
+    const prev = kitchenOrders;
+    kitchenOrders = snap.val()||{};
+    Object.keys(kitchenOrders).forEach(id=>{
+      if(!prev[id] && kitchenOrders[id].status==="baru") playKdsBeep(2, 880);
+    });
+    if(currentView==="dapur") renderDapur();
+    updateKdsAlarmLoop();
+  }, onFirebaseErr("pesanan dapur"));
+
+  // Bel manual dari kasir: hanya device yang sedang membuka Layar Dapur yang membunyikan sirine,
+  // supaya HP/komputer kasir sendiri tidak ikut berbunyi keras saat dia yang membel.
+  db.ref("kitchen_bell").limitToLast(1).on("child_added", snap=>{
+    const val = snap.val();
+    if(!val || Date.now()-val.ts > 15000) return;
+    if(currentView==="dapur") triggerBelFlashAndSiren();
+  });
+
+  setInterval(()=>{ if(currentView==="dapur") renderDapur(); }, 30000);
+}
+
+function updateKdsAlarmLoop(){
+  const adaBaru = Object.values(kitchenOrders).some(o=>o.status==="baru");
+  if(adaBaru && !kdsAlarmTimer){
+    kdsAlarmTimer = setInterval(()=>{ if(currentView==="dapur") playKdsBeep(1, 880); }, 15000);
+  } else if(!adaBaru && kdsAlarmTimer){
+    clearInterval(kdsAlarmTimer); kdsAlarmTimer = null;
+  }
+}
+
+function renderDapur(){
+  const grid = document.getElementById("kdsGrid");
+  if(!grid) return;
+  const list = Object.entries(kitchenOrders)
+    .filter(([,o])=> o.status!=="selesai")
+    .sort((a,b)=> (a[1].createdAt||0)-(b[1].createdAt||0));
+  const cntLbl = document.getElementById("kdsCountLbl");
+  if(cntLbl) cntLbl.textContent = list.filter(([,o])=>o.status==="baru").length + " pesanan menunggu";
+  if(list.length===0){
+    grid.innerHTML = `<div class="kdsEmpty"><div class="ic">✅</div>Tidak ada pesanan yang perlu dimasak saat ini.</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(([id,o])=>{
+    const mins = Math.floor((Date.now()-(o.createdAt||Date.now()))/60000);
+    const late = mins>=10;
+    const itemsHtml = (o.items||[]).map(it=>{
+      const mods = it.modifiers && it.modifiers.length ? ` <span style="color:var(--cream-faint);font-size:12px;">(${it.modifiers.join(", ")})</span>` : "";
+      return `<li><span>${it.name}${mods}</span><span class="qty">×${it.qty}</span></li>`;
+    }).join("");
+    const label = o.orderType==="Dine In" ? "🍽 Meja "+(o.mejaNo||"-") : "🥤 "+(o.orderType||"Takeaway");
+    return `
+    <div class="kdsCard ${o.status==="baru"?"new":"proses"}">
+      <div class="kdsHead">
+        <div><div class="kdsMeja">${label}</div><div class="kdsTrx">${o.trxNo||""}</div></div>
+        <div class="kdsTimer ${late?"late":""}">${mins<1?"Baru saja":mins+" mnt"}</div>
+      </div>
+      <ul class="kdsItems">${itemsHtml}</ul>
+      <div class="kdsActions">
+        ${o.status==="baru" ? `<button class="btn btn-ghost btn-sm" onclick="setKitchenStatus('${id}','proses')">▶ Mulai Masak</button>` : ""}
+        <button class="btn btn-primary btn-sm" onclick="setKitchenStatus('${id}','selesai')">✔ Selesai</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function setKitchenStatus(id, status){
+  db.ref("kitchen_orders/"+id).update({ status, [status+"At"]: Date.now() }).then(()=>{
+    updateKdsAlarmLoop();
+  });
+}
+
+function markKdsSeen(){ /* placeholder — tempat untuk penanda "sudah dilihat" jika dibutuhkan nanti */ }
+
+function belDapurManual(){
+  const ref = db.ref("kitchen_bell").push();
+  ref.set({ ts: Date.now(), by: (currentUser && currentUser.name) || "Kasir" }).then(()=>{
+    toast("🔔 Bel dikirim ke Layar Dapur!", "ok");
+    setTimeout(()=> ref.remove().catch(()=>{}), 20000);
+  }).catch(err=> toast("Gagal mengirim bel: "+err.message, "err"));
+}
+
+function triggerBelFlashAndSiren(){
+  playKdsBeep(1, 1046);
+  setTimeout(()=>playKdsBeep(1, 784), 380);
+  setTimeout(()=>playKdsBeep(1, 1046), 760);
+  setTimeout(()=>playKdsBeep(1, 784), 1140);
+  document.body.classList.add("belFlash");
+  setTimeout(()=> document.body.classList.remove("belFlash"), 3000);
 }
 
 /* =========================================================
