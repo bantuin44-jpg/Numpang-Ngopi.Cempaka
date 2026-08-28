@@ -493,6 +493,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
             <div class="sumRow"><span>Diskon</span><span class="mono" id="sumDiscount">Rp0</span></div>
             <div class="sumRow total"><span>Total</span><span id="sumTotal">Rp0</span></div>
             <div class="payGrid" id="payGrid"></div>
+            <div id="tagihanNameWrap" class="field hidden" style="margin-top:8px;">
+              <label>Nama Tagihan (Atas Nama)</label>
+              <input type="text" id="tagihanNameInput" placeholder="Contoh: Budi / Meja 5 - Andi" oninput="updateChange()">
+            </div>
             <div class="field" style="margin-top:2px;">
               <label id="payAmountLabel">Jumlah Bayar</label>
               <input type="number" id="payAmountInput" placeholder="0" min="0" oninput="updateChange()">
@@ -1042,8 +1046,9 @@ function changeQty(lineKey, delta){
   if(item.qty<=0) cart = cart.filter(c=>c.lineKey!==lineKey);
   renderCart(); renderMenuGrid();
 }
-function clearCart(){ cart=[]; document.getElementById("payAmountInput").value=""; document.getElementById("discountInput").value=""; orderType="Takeaway"; selectedMeja=null; buildOrderTypeGrid(); renderCart(); renderMenuGrid(); }
+function clearCart(){ cart=[]; document.getElementById("payAmountInput").value=""; document.getElementById("discountInput").value=""; const tn=document.getElementById("tagihanNameInput"); if(tn) tn.value=""; selectedPayMethod="Cash"; buildPayGrid(); orderType="Takeaway"; selectedMeja=null; buildOrderTypeGrid(); renderCart(); renderMenuGrid(); }
 function cartLineUnitPrice(c){ return c.price + (c.modifiers||[]).reduce((s,m)=>s+(m.price||0),0); }
+function payMethodLabel(t){ return t.payMethod + (t.payMethod==="Tagihan" && t.tagihanName ? ` (${t.tagihanName})` : ""); }
 function renderCart(){
   const list = document.getElementById("cartList");
   const discRow = document.getElementById("discountRow");
@@ -1083,6 +1088,7 @@ function syncPayAmountField(){
   const input = document.getElementById("payAmountInput");
   const label = document.getElementById("payAmountLabel");
   const changeRow = document.getElementById("changeRow");
+  const tagihanWrap = document.getElementById("tagihanNameWrap");
   if(!input) return;
   if(selectedPayMethod === "Tagihan"){
     input.value = 0;
@@ -1090,10 +1096,12 @@ function syncPayAmountField(){
     input.placeholder = "Belum dibayar (Tagihan)";
     if(label) label.textContent = "Jumlah Bayar (Tagihan / belum dibayar)";
     if(changeRow) changeRow.classList.add("hidden");
+    if(tagihanWrap) tagihanWrap.classList.remove("hidden");
   } else {
     input.disabled = false;
     if(label) label.textContent = "Jumlah Bayar";
     if(changeRow) changeRow.classList.remove("hidden");
+    if(tagihanWrap) tagihanWrap.classList.add("hidden");
   }
   updateChange();
 }
@@ -1180,6 +1188,11 @@ function submitTransaction(){
   const total = Math.max(sub - disc, 0);
   const isTagihan = selectedPayMethod === "Tagihan";
   let pay = Number(document.getElementById("payAmountInput").value||0);
+  let tagihanName = "";
+  if(isTagihan){
+    tagihanName = (document.getElementById("tagihanNameInput").value||"").trim();
+    if(!tagihanName){ toast("Isi nama tagihan (atas nama siapa) terlebih dahulu.", "err"); return; }
+  }
   if(!isTagihan && pay < total){ toast("Jumlah bayar kurang dari total.", "err"); return; }
   if(isTagihan) pay = 0;
   const change = isTagihan ? 0 : pay - total;
@@ -1199,6 +1212,7 @@ function submitTransaction(){
       kasirUid: currentUser.uid, kasirName: currentUser.name,
       items, subtotal: sub, discount: disc, total,
       payMethod: selectedPayMethod, payAmount: pay, change,
+      tagihanName: isTagihan ? tagihanName : null,
       orderType: orderType, mejaNo: orderType==="Dine In" ? selectedMeja : null,
       status: "selesai"
     };
@@ -1258,7 +1272,7 @@ function showReceipt(trx){
         <tr><td>Subtotal</td><td></td><td style="text-align:right;">${fmtRp(trx.subtotal)}</td></tr>
         ${trx.discount?`<tr><td>Diskon</td><td></td><td style="text-align:right;">-${fmtRp(trx.discount)}</td></tr>`:""}
         <tr><td style="font-weight:700;">TOTAL</td><td></td><td style="text-align:right;font-weight:700;">${fmtRp(trx.total)}</td></tr>
-        <tr><td>Bayar (${trx.payMethod})</td><td></td><td style="text-align:right;">${fmtRp(trx.payAmount)}</td></tr>
+        <tr><td>Bayar (${payMethodLabel(trx)})</td><td></td><td style="text-align:right;">${fmtRp(trx.payAmount)}</td></tr>
         <tr><td>Kembali</td><td></td><td style="text-align:right;">${fmtRp(trx.change)}</td></tr>
       </table>
       <div class="rc-line"></div>
@@ -1296,7 +1310,7 @@ function renderRiwayat(){
       <td>${t.orderType==="Dine In" ? ("🍽 Meja "+(t.mejaNo||"-")) : "🥤 Takeaway"}</td>
       <td>${(t.items||[]).reduce((s,i)=>s+i.qty,0)} item</td>
       <td class="mono">${fmtRp(t.total)}</td>
-      <td>${t.payMethod}</td>
+      <td>${payMethodLabel(t)}</td>
       <td><span class="badge ${t.status==='void'?'badge-void':'badge-ok'}">${t.status==='void'?'Void':'Selesai'}</span></td>
       <td>
         <div class="rowActions">
@@ -1634,7 +1648,7 @@ function runLaporan(){
   document.getElementById("lapPenjualanBody").innerHTML = list.sort((a,b)=>b[1].timestamp-a[1].timestamp).map(([id,t])=>`
     <tr><td class="mono">${t.trxNo}</td><td class="mono">${new Date(t.timestamp).toLocaleString("id-ID")}</td><td>${t.kasirName}</td>
     <td>${t.orderType==="Dine In" ? ("🍽 Meja "+(t.mejaNo||"-")) : "🥤 Takeaway"}</td>
-    <td class="mono">${fmtRp(t.total)}</td><td>${t.payMethod}</td>
+    <td class="mono">${fmtRp(t.total)}</td><td>${payMethodLabel(t)}</td>
     <td><span class="badge ${t.status==='void'?'badge-void':'badge-ok'}">${t.status==='void'?'Void':'Selesai'}</span></td></tr>`).join("") || `<tr><td colspan="7"><div class="emptystate">Tidak ada data pada rentang ini.</div></td></tr>`;
 
   const dineIn = valid.filter(([,t])=>t.orderType==="Dine In");
@@ -1666,9 +1680,9 @@ function switchLapTab(tab){
 }
 function exportCSV(){
   if(lapFilteredTrx.length===0){ toast("Tidak ada data untuk diekspor.", "err"); return; }
-  let csv = "No Transaksi,Tanggal,Kasir,Jenis,Meja,Subtotal,Diskon,Total,Metode,Status\n";
+  let csv = "No Transaksi,Tanggal,Kasir,Jenis,Meja,Subtotal,Diskon,Total,Metode,Nama Tagihan,Status\n";
   lapFilteredTrx.forEach(([id,t])=>{
-    csv += [t.trxNo, t.date, t.kasirName, t.orderType||"Takeaway", t.mejaNo||"", t.subtotal, t.discount||0, t.total, t.payMethod, t.status].join(",") + "\n";
+    csv += [t.trxNo, t.date, t.kasirName, t.orderType||"Takeaway", t.mejaNo||"", t.subtotal, t.discount||0, t.total, t.payMethod, t.tagihanName||"", t.status].join(",") + "\n";
   });
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
@@ -1697,7 +1711,7 @@ function printLaporan(){
     .map(([n,d])=>`<tr><td>${n}</td><td>${d.count}</td><td>${fmtRp(d.total)}</td></tr>`).join("");
 
   const trxRows = valid.sort((a,b)=>b[1].timestamp-a[1].timestamp)
-    .map(([,t])=>`<tr><td>${t.trxNo}</td><td>${t.date}</td><td>${t.kasirName}</td><td>${t.orderType||"Takeaway"}</td><td>${fmtRp(t.total)}</td><td>${t.payMethod}</td></tr>`).join("");
+    .map(([,t])=>`<tr><td>${t.trxNo}</td><td>${t.date}</td><td>${t.kasirName}</td><td>${t.orderType||"Takeaway"}</td><td>${fmtRp(t.total)}</td><td>${payMethodLabel(t)}</td></tr>`).join("");
 
   document.getElementById("reportPrintArea").innerHTML = `
     <h1>${settings.storeName||"Numpang Ngopi Cempaka"}</h1>
