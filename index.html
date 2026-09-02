@@ -256,6 +256,29 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .belFlash{animation:belFlashAnim 1s ease-in-out infinite;}
 @keyframes belFlashAnim{0%,100%{background:var(--bg);}50%{background:rgba(225,29,72,.18);}}
 
+/* ===== RADIO (voice channel) ===== */
+.radioFloatBtn{position:fixed;right:96px;bottom:26px;z-index:40;width:60px;height:60px;border-radius:50%;background:var(--surface);color:var(--cream);border:1px solid var(--line-strong);font-size:22px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .15s;}
+.radioFloatBtn:active{transform:scale(.94);}
+.radioFloatBtn.on{background:var(--success);color:#fff;border-color:var(--success);box-shadow:0 8px 22px rgba(22,163,74,.4);}
+.radioFloatBtn.on.speaking{animation:radioSpeakPulse 1s ease-in-out infinite;}
+.radioFloatBtn .radioDot{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--cream-faint);border:2px solid var(--surface);}
+.radioFloatBtn.on .radioDot{background:#fff;}
+@keyframes radioSpeakPulse{0%,100%{box-shadow:0 8px 22px rgba(22,163,74,.4);}50%{box-shadow:0 8px 30px rgba(22,163,74,.8),0 0 0 8px rgba(22,163,74,.15);}}
+.radioPanel{position:fixed;right:26px;bottom:96px;z-index:41;width:270px;max-width:calc(100vw - 40px);background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow);padding:14px;font-family:var(--font-ui);}
+.radioPanel.hidden{display:none;}
+.radioPanel h4{margin:0 0 4px;font-family:var(--font-display);font-size:15px;color:var(--cream);display:flex;align-items:center;gap:6px;}
+.radioPanel .sub{font-size:11.5px;color:var(--cream-faint);margin-bottom:10px;}
+.radioMembers{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:10px;}
+.radioMember{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;background:var(--surface-2);font-size:12.5px;color:var(--cream-dim);}
+.radioMember .rmDot{width:8px;height:8px;border-radius:50%;background:var(--cream-faint);flex-shrink:0;}
+.radioMember.speaking{background:var(--success-bg);color:var(--success);}
+.radioMember.speaking .rmDot{background:var(--success);box-shadow:0 0 0 3px rgba(22,163,74,.25);}
+.radioMember.me{font-weight:700;}
+.radioMember .rmMuted{margin-left:auto;font-size:11px;opacity:.7;}
+.radioEmpty{font-size:12px;color:var(--cream-faint);text-align:center;padding:10px 0;}
+.radioActions{display:flex;gap:8px;}
+.radioActions .btn{flex:1;padding:9px;font-size:12.5px;}
+
 /* Buttons row */
 .rowActions{display:flex;gap:8px;flex-wrap:wrap;}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
@@ -716,6 +739,21 @@ tr:hover td{background:rgba(244,234,216,.02);}
 
 <button id="belFloatBtn" class="belFloatBtn hidden" title="Bel Dapur — panggil perhatian dapur" onclick="belDapurManual()">🔔</button>
 
+<button id="radioFloatBtn" class="radioFloatBtn" title="Radio Cempaka — komunikasi suara langsung" onclick="toggleRadioPanel()">
+  🎙️<span class="radioDot" id="radioDot"></span>
+</button>
+<div id="radioPanel" class="radioPanel hidden">
+  <h4>🎙️ Radio Cempaka</h4>
+  <div class="sub" id="radioStatusText">Belum tersambung. Semua yang login otomatis nyambung, kayak channel HT.</div>
+  <div class="radioMembers" id="radioMembersList">
+    <div class="radioEmpty">Belum ada yang tersambung.</div>
+  </div>
+  <div class="radioActions">
+    <button class="btn btn-primary" id="radioJoinBtn" onclick="joinRadio()">🎙️ Gabung</button>
+    <button class="btn btn-ghost hidden" id="radioMuteBtn" onclick="toggleRadioMute()">🔇 Mute</button>
+  </div>
+</div>
+
 <div class="toastWrap" id="toastWrap"></div>
 <div id="modalRoot"></div>
 <div id="reportPrintArea"></div>
@@ -892,7 +930,7 @@ function mapAuthErr(err){
   if(c.includes("invalid-email")) return "Format email tidak valid.";
   return "Login gagal: " + (err.message||c);
 }
-function doLogout(){ auth.signOut(); }
+function doLogout(){ leaveRadio(); auth.signOut(); }
 document.getElementById("loginPass")?.addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
 
 /* =========================================================
@@ -993,6 +1031,7 @@ function bindListeners(){
   db.ref("stock_movements").on("value", snap=>{ stockMovements = snap.val()||{}; if(currentView==="stok") renderStokMovements(); }, onFirebaseErr("pergerakan stok"));
   db.ref("settings").on("value", snap=>{ const s = snap.val(); if(s) settings = {...settings, ...s}; if(currentView==="settings") fillSettingsForm(); }, onFirebaseErr("pengaturan toko"));
   bindKitchenListeners();
+  initRadioPresenceWatcher();
 }
 
 function logActivity(action, detail){
@@ -2114,6 +2153,262 @@ function saveSettings(){
 /* =========================================================
    MODAL HELPER
 ========================================================= */
+/* =========================================================
+   RADIO CEMPAKA — voice channel (WebRTC + Firebase signaling)
+   Mode: "selalu terbuka" (open mic broadcast), semua yang login
+   di channel ini otomatis saling dengar, mirip HT/Zoom.
+========================================================= */
+const RADIO_ICE = { iceServers:[
+  { urls:"stun:stun.l.google.com:19302" },
+  { urls:"stun:stun1.l.google.com:19302" }
+]};
+let radioJoined = false;
+let radioMuted = false;
+let radioLocalStream = null;
+let radioPeers = {};      // peerUid -> {pc, offerHandled, answerHandled, processedCandidates}
+let radioMembers = {};    // uid -> {name, speaking}
+let radioAudioCtx = null;
+let radioPresenceRef = null;
+let radioSignalRef = null;
+
+function getRadioAudioCtx(){
+  if(!radioAudioCtx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    radioAudioCtx = new Ctx();
+  }
+  return radioAudioCtx;
+}
+
+function initRadioPresenceWatcher(){
+  if(radioPresenceRef) return; // sudah aktif, jangan dobel
+  radioPresenceRef = db.ref("radio_presence");
+  radioPresenceRef.on("child_added", snap=>{
+    const peerUid = snap.key;
+    radioMembers[peerUid] = snap.val() || {name:"Kasir"};
+    renderRadioMembers();
+    if(radioJoined && peerUid !== currentUser.uid && currentUser.uid < peerUid){
+      maybeConnectRadioPeer(peerUid);
+    }
+  }, onFirebaseErr("radio"));
+  radioPresenceRef.on("child_changed", snap=>{
+    radioMembers[snap.key] = { ...(radioMembers[snap.key]||{}), ...(snap.val()||{}) };
+    renderRadioMembers();
+  });
+  radioPresenceRef.on("child_removed", snap=>{
+    delete radioMembers[snap.key];
+    cleanupRadioPeer(snap.key);
+    renderRadioMembers();
+  });
+}
+
+window.addEventListener("beforeunload", ()=>{
+  if(radioLocalStream){ radioLocalStream.getTracks().forEach(t=> t.stop()); }
+});
+
+function toggleRadioPanel(){
+  document.getElementById("radioPanel").classList.toggle("hidden");
+}
+
+function joinRadio(){
+  if(radioJoined) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast("Browser ini tidak mendukung akses mikrofon.", "err");
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } })
+    .then(stream=>{
+      radioLocalStream = stream;
+      radioJoined = true;
+      radioMuted = false;
+      const myRef = db.ref("radio_presence/"+currentUser.uid);
+      myRef.set({ name: currentUser.name||"Kasir", muted:false, joinedAt: Date.now() });
+      myRef.onDisconnect().remove();
+      radioSignalRef = db.ref("radio_signal/"+currentUser.uid);
+      db.ref("radio_signal/"+currentUser.uid).onDisconnect().remove();
+      radioSignalRef.on("value", snap=>{
+        const data = snap.val() || {};
+        Object.keys(data).forEach(fromUid=>{
+          if(fromUid !== currentUser.uid) handleRadioSignal(fromUid, data[fromUid]);
+        });
+      });
+      setupRadioSpeakingDetector(currentUser.uid, radioLocalStream);
+      Object.keys(radioMembers).forEach(peerUid=>{
+        if(peerUid !== currentUser.uid && currentUser.uid < peerUid) maybeConnectRadioPeer(peerUid);
+      });
+      updateRadioUI();
+      toast("Radio Cempaka aktif — mic kamu siaran ke semua yang tersambung.", "ok");
+    })
+    .catch(err=>{
+      toast("Gagal mengaktifkan mikrofon: "+(err.message||err.name), "err");
+    });
+}
+
+function leaveRadio(){
+  if(!radioJoined) return;
+  Object.keys(radioPeers).forEach(peerUid=> cleanupRadioPeer(peerUid));
+  if(radioLocalStream){ radioLocalStream.getTracks().forEach(t=>t.stop()); radioLocalStream=null; }
+  db.ref("radio_presence/"+currentUser.uid).remove();
+  if(radioSignalRef){ radioSignalRef.off(); }
+  db.ref("radio_signal/"+currentUser.uid).remove();
+  radioJoined = false;
+  radioMuted = false;
+  updateRadioUI();
+  toast("Kamu keluar dari Radio Cempaka.", "ok");
+}
+
+function toggleRadioMute(){
+  if(!radioJoined || !radioLocalStream) return;
+  radioMuted = !radioMuted;
+  radioLocalStream.getAudioTracks().forEach(t=> t.enabled = !radioMuted);
+  db.ref("radio_presence/"+currentUser.uid+"/muted").set(radioMuted);
+  updateRadioUI();
+}
+
+function maybeConnectRadioPeer(peerUid){
+  if(!radioJoined || radioPeers[peerUid]) return;
+  const entry = createRadioPeerConnection(peerUid);
+  entry.pc.createOffer().then(offer=> entry.pc.setLocalDescription(offer).then(()=>offer))
+    .then(offer=>{
+      db.ref("radio_signal/"+peerUid+"/"+currentUser.uid+"/offer").set({ sdp: offer.sdp, type: offer.type });
+    })
+    .catch(err=> console.error("radio offer error", err));
+}
+
+function createRadioPeerConnection(peerUid){
+  const pc = new RTCPeerConnection(RADIO_ICE);
+  if(radioLocalStream){
+    radioLocalStream.getTracks().forEach(t=> pc.addTrack(t, radioLocalStream));
+  }
+  pc.onicecandidate = e=>{
+    if(e.candidate){
+      db.ref("radio_signal/"+peerUid+"/"+currentUser.uid+"/candidates").push(e.candidate.toJSON());
+    }
+  };
+  pc.ontrack = e=>{
+    let audioEl = document.getElementById("radioAudio_"+peerUid);
+    if(!audioEl){
+      audioEl = document.createElement("audio");
+      audioEl.id = "radioAudio_"+peerUid;
+      audioEl.autoplay = true;
+      audioEl.style.display = "none";
+      document.body.appendChild(audioEl);
+    }
+    audioEl.srcObject = e.streams[0];
+    setupRadioSpeakingDetector(peerUid, e.streams[0]);
+  };
+  pc.onconnectionstatechange = ()=>{
+    if(["failed","closed","disconnected"].includes(pc.connectionState)) cleanupRadioPeer(peerUid);
+  };
+  const entry = { pc, offerHandled:false, answerHandled:false, processedCandidates:{} };
+  radioPeers[peerUid] = entry;
+  return entry;
+}
+
+function handleRadioSignal(fromUid, payload){
+  if(!radioJoined || !payload) return;
+  let entry = radioPeers[fromUid];
+  if(payload.offer && !(entry && entry.offerHandled)){
+    if(!entry) entry = createRadioPeerConnection(fromUid);
+    entry.offerHandled = true;
+    entry.pc.setRemoteDescription(new RTCSessionDescription(payload.offer))
+      .then(()=> entry.pc.createAnswer())
+      .then(answer=> entry.pc.setLocalDescription(answer).then(()=>answer))
+      .then(answer=>{
+        db.ref("radio_signal/"+fromUid+"/"+currentUser.uid+"/answer").set({ sdp: answer.sdp, type: answer.type });
+      })
+      .catch(err=> console.error("radio answer error", err));
+  }
+  if(payload.answer && entry && !entry.answerHandled){
+    entry.answerHandled = true;
+    entry.pc.setRemoteDescription(new RTCSessionDescription(payload.answer)).catch(err=> console.error("radio setRemote error", err));
+  }
+  if(payload.candidates && entry){
+    Object.keys(payload.candidates).forEach(ck=>{
+      if(entry.processedCandidates[ck]) return;
+      entry.processedCandidates[ck] = true;
+      entry.pc.addIceCandidate(new RTCIceCandidate(payload.candidates[ck])).catch(()=>{});
+    });
+  }
+}
+
+function cleanupRadioPeer(peerUid){
+  const entry = radioPeers[peerUid];
+  if(entry){
+    try{ entry.pc.close(); }catch(e){}
+    delete radioPeers[peerUid];
+  }
+  const audioEl = document.getElementById("radioAudio_"+peerUid);
+  if(audioEl) audioEl.remove();
+  db.ref("radio_signal/"+peerUid+"/"+currentUser.uid).remove();
+}
+
+function setupRadioSpeakingDetector(peerUid, stream){
+  try{
+    const ctx = getRadioAudioCtx();
+    const src = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const tick = ()=>{
+      const stillRelevant = peerUid===currentUser.uid ? radioJoined : !!radioPeers[peerUid];
+      if(!stillRelevant) return;
+      analyser.getByteFrequencyData(data);
+      let sum=0; for(let i=0;i<data.length;i++) sum+=data[i];
+      const avg = sum/data.length;
+      const isSpeaking = avg > 14;
+      if(radioMembers[peerUid] && radioMembers[peerUid].speaking !== isSpeaking){
+        radioMembers[peerUid].speaking = isSpeaking;
+        renderRadioMembers();
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }catch(e){ console.warn("radio speaking detector gagal", e); }
+}
+
+function renderRadioMembers(){
+  const list = document.getElementById("radioMembersList");
+  const statusText = document.getElementById("radioStatusText");
+  if(!list || !statusText) return;
+  const keys = Object.keys(radioMembers);
+  const anySpeaking = keys.some(k=> radioMembers[k].speaking);
+  document.getElementById("radioFloatBtn")?.classList.toggle("speaking", anySpeaking);
+  if(keys.length===0){
+    list.innerHTML = '<div class="radioEmpty">Belum ada yang tersambung.</div>';
+    statusText.textContent = "Belum tersambung. Klik Gabung buat mulai siaran.";
+    return;
+  }
+  statusText.textContent = keys.length + " orang tersambung ke channel.";
+  list.innerHTML = keys.map(k=>{
+    const m = radioMembers[k];
+    const isMe = k === (currentUser && currentUser.uid);
+    return `<div class="radioMember ${m.speaking?'speaking':''} ${isMe?'me':''}">
+      <span class="rmDot"></span>
+      <span>${(m.name||"Kasir")}${isMe?" (kamu)":""}</span>
+      ${m.muted?'<span class="rmMuted">🔇</span>':''}
+    </div>`;
+  }).join("");
+}
+
+function updateRadioUI(){
+  const floatBtn = document.getElementById("radioFloatBtn");
+  const joinBtn = document.getElementById("radioJoinBtn");
+  const muteBtn = document.getElementById("radioMuteBtn");
+  if(!floatBtn || !joinBtn || !muteBtn) return;
+  floatBtn.classList.toggle("on", radioJoined);
+  if(radioJoined){
+    joinBtn.textContent = "📴 Keluar Radio";
+    joinBtn.onclick = leaveRadio;
+    muteBtn.classList.remove("hidden");
+    muteBtn.textContent = radioMuted ? "🔊 Unmute" : "🔇 Mute";
+  } else {
+    joinBtn.textContent = "🎙️ Gabung";
+    joinBtn.onclick = joinRadio;
+    muteBtn.classList.add("hidden");
+  }
+}
+
 function openModal(title, bodyHtml, buttons, wide){
   const root = document.getElementById("modalRoot");
   root.innerHTML = `
