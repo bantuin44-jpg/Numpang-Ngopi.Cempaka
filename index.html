@@ -598,6 +598,36 @@ tr:hover td{background:rgba(244,234,216,.02);}
         </table></div></div>
       </div>
 
+      <!-- ===== PIUTANG / TAGIHAN MINGGUAN ===== -->
+      <div id="view-piutang" class="viewpane hidden">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="toolbar" style="margin-bottom:0;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <div><label style="font-size:11.5px;color:var(--cream-faint);display:block;margin-bottom:4px;">Dari</label><input type="date" id="piutFrom" class="mono" style="background:var(--surface-2);border:1px solid var(--line);color:var(--cream);padding:9px 12px;border-radius:9px;"></div>
+              <div><label style="font-size:11.5px;color:var(--cream-faint);display:block;margin-bottom:4px;">Sampai</label><input type="date" id="piutTo" class="mono" style="background:var(--surface-2);border:1px solid var(--line);color:var(--cream);padding:9px 12px;border-radius:9px;"></div>
+              <div style="display:flex;gap:6px;align-self:flex-end;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" onclick="setPiutRange('week')">Minggu Ini</button>
+                <button class="btn btn-ghost btn-sm" onclick="setPiutRange('lastweek')">Minggu Lalu</button>
+                <button class="btn btn-ghost btn-sm" onclick="setPiutRange('month')">Bulan Ini</button>
+                <button class="btn btn-ghost btn-sm" onclick="setPiutRange('all')">Semua</button>
+                <button class="btn btn-primary btn-sm" onclick="renderPiutangList()">Terapkan</button>
+              </div>
+            </div>
+            <div class="searchbox"><span class="ic">🔎</span><input id="piutSearch" placeholder="Cari nama pelanggan..." oninput="renderPiutangList()"></div>
+          </div>
+        </div>
+        <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc1"><div class="ic">📒</div><div class="lbl">Total Piutang Belum Lunas</div><div class="val" id="piutTotal">Rp0</div></div>
+          <div class="card statCard sc-color sc2"><div class="ic">🧾</div><div class="lbl">Tagihan Belum Lunas</div><div class="val" id="piutCount">0</div></div>
+          <div class="card statCard sc-color sc3"><div class="ic">👥</div><div class="lbl">Pelanggan Berhutang</div><div class="val" id="piutPeople">0</div></div>
+          <div class="card statCard sc-color sc4"><div class="ic">✔</div><div class="lbl">Sudah Dibayar (Periode Ini)</div><div class="val" id="piutPaidTotal">Rp0</div></div>
+        </div>
+        <div class="card"><div class="tblwrap"><table>
+          <thead><tr><th>Nama Pelanggan</th><th>Tagihan Belum Lunas</th><th>Total Belum Lunas</th><th>Transaksi Terakhir</th><th></th></tr></thead>
+          <tbody id="piutangBody"></tbody>
+        </table></div></div>
+      </div>
+
       <!-- ===== MENU (ADMIN) ===== -->
       <div id="view-menu" class="viewpane hidden">
         <div class="tabbar">
@@ -941,6 +971,7 @@ const NAV_ITEMS = [
   {id:"pos", label:"Transaksi", ic:"🛒", roles:["admin","kasir"]},
   {id:"dapur", label:"Layar Dapur", ic:"🍳", roles:["admin","kasir"]},
   {id:"riwayat", label:"Riwayat Transaksi", ic:"🧾", roles:["admin","kasir"]},
+  {id:"piutang", label:"Piutang / Tagihan", ic:"📒", roles:["admin","kasir"]},
   {id:"laporan", label:"Laporan", ic:"📈", roles:["admin"]},
   {id:"menu", label:"Master Menu", ic:"☕", roles:["admin"]},
   {id:"stok", label:"Stok", ic:"📦", roles:["admin"]},
@@ -976,6 +1007,9 @@ function enterApp(){
   const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate()-30);
   document.getElementById("lapFrom").value = monthAgo.toISOString().slice(0,10);
   document.getElementById("lapTo").value = todayStr();
+  const wkStart = startOfWeek(new Date());
+  document.getElementById("piutFrom").value = wkStart.toISOString().slice(0,10);
+  document.getElementById("piutTo").value = todayStr();
 }
 
 const VIEW_META = {
@@ -983,6 +1017,7 @@ const VIEW_META = {
   pos:["Transaksi","Buat pesanan dan proses pembayaran"],
   dapur:["Layar Dapur","Pesanan masuk secara realtime"],
   riwayat:["Riwayat Transaksi","Daftar transaksi yang tercatat"],
+  piutang:["Piutang / Tagihan","Rekap tagihan per pelanggan & catat pembayaran mingguan"],
   laporan:["Laporan","Analisis penjualan, produk, kasir & pembayaran"],
   menu:["Master Menu","Kelola produk dan kategori"],
   stok:["Stok","Pantau dan kelola stok bahan/produk"],
@@ -1001,6 +1036,7 @@ function switchView(id){
   if(id==="pos") renderMenuGrid();
   if(id==="dapur") { renderDapur(); markKdsSeen(); }
   if(id==="riwayat") renderRiwayat();
+  if(id==="piutang") renderPiutangList();
   if(id==="menu") { renderProdukTable(); renderKategoriTable(); }
   if(id==="stok") { renderStokTable(); renderStokMovements(); }
   if(id==="users") renderUsersTable();
@@ -1026,7 +1062,7 @@ function bindListeners(){
   db.ref("categories").on("value", snap=>{ categories = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderKategoriTable(); buildCatTabs(); }, onFirebaseErr("kategori"));
   db.ref("products").on("value", snap=>{ products = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderProdukTable(); if(currentView==="stok"){renderStokTable();} }, onFirebaseErr("produk"));
   db.ref("users").on("value", snap=>{ users = snap.val()||{}; if(currentView==="users") renderUsersTable(); }, onFirebaseErr("pengguna"));
-  db.ref("transactions").on("value", snap=>{ allTransactions = snap.val()||{}; if(currentView==="riwayat") renderRiwayat(); if(currentView==="dashboard") renderDashboard(); if(currentView==="laporan") runLaporan(); }, onFirebaseErr("transaksi"));
+  db.ref("transactions").on("value", snap=>{ allTransactions = snap.val()||{}; if(currentView==="riwayat") renderRiwayat(); if(currentView==="dashboard") renderDashboard(); if(currentView==="laporan") runLaporan(); if(currentView==="piutang") renderPiutangList(); }, onFirebaseErr("transaksi"));
   db.ref("active_tables").on("value", snap=>{ activeTables = snap.val()||{}; if(currentView==="pos" && orderType==="Dine In") buildMejaGrid(); }, onFirebaseErr("status meja"));
   db.ref("stock_movements").on("value", snap=>{ stockMovements = snap.val()||{}; if(currentView==="stok") renderStokMovements(); }, onFirebaseErr("pergerakan stok"));
   db.ref("settings").on("value", snap=>{ const s = snap.val(); if(s) settings = {...settings, ...s}; if(currentView==="settings") fillSettingsForm(); }, onFirebaseErr("pengaturan toko"));
@@ -1520,6 +1556,191 @@ function voidTransaction(id){
     toast("Transaksi di-void.", "ok");
     logActivity("void_transaksi", t.trxNo+" - "+reason);
   });
+}
+
+/* =========================================================
+   PIUTANG / TAGIHAN MINGGUAN
+   (Grup transaksi Tagihan per nama pelanggan, biar kelihatan
+   rekap mingguan + bisa dilunasi sekaligus)
+========================================================= */
+let piutRowsSorted = [];
+function startOfWeek(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
+function itemsSummary(items){ return (items||[]).map(i=>i.name+" x"+i.qty).join(", ") || "-"; }
+function setPiutRange(kind){
+  const to = new Date(); const from = new Date();
+  if(kind==="week"){ from.setTime(startOfWeek(to).getTime()); }
+  else if(kind==="lastweek"){ const sow = startOfWeek(to); from.setTime(sow.getTime()); from.setDate(from.getDate()-7); to.setTime(sow.getTime()); to.setDate(to.getDate()-1); }
+  else if(kind==="month"){ from.setDate(1); }
+  else if(kind==="all"){ document.getElementById("piutFrom").value=""; document.getElementById("piutTo").value=""; renderPiutangList(); return; }
+  document.getElementById("piutFrom").value = from.toISOString().slice(0,10);
+  document.getElementById("piutTo").value = to.toISOString().slice(0,10);
+  renderPiutangList();
+}
+function renderPiutangList(){
+  const fromEl = document.getElementById("piutFrom"), toEl = document.getElementById("piutTo"), searchEl = document.getElementById("piutSearch");
+  if(!fromEl) return;
+  const from = fromEl.value, to = toEl.value;
+  const search = (searchEl.value||"").trim().toLowerCase();
+  const list = Object.entries(allTransactions||{}).filter(([id,t])=>
+    t.payMethod==="Tagihan" && t.status!=="void" && (!from || t.date>=from) && (!to || t.date<=to)
+  );
+  const groups = {};
+  list.forEach(([id,t])=>{
+    const name = (t.tagihanName||"(Tanpa Nama)").trim() || "(Tanpa Nama)";
+    const key = name.toLowerCase();
+    if(!groups[key]) groups[key] = { name, trx: [] };
+    groups[key].trx.push([id,t]);
+  });
+  let totalUnpaid = 0, countUnpaid = 0, totalPaid = 0;
+  let rows = Object.entries(groups).filter(([,g])=> !search || g.name.toLowerCase().includes(search));
+  rows.forEach(([,g])=>{
+    g.trx.sort((a,b)=>b[1].timestamp-a[1].timestamp);
+    g.unpaid = g.trx.filter(([,t])=>!t.lunas);
+    g.paid = g.trx.filter(([,t])=>t.lunas);
+    g.unpaidTotal = g.unpaid.reduce((s,[,t])=>s+t.total,0);
+    g.paidTotal = g.paid.reduce((s,[,t])=>s+t.total,0);
+    g.lastDate = g.trx.reduce((m,[,t])=> t.date>m?t.date:m, "");
+    totalUnpaid += g.unpaidTotal; countUnpaid += g.unpaid.length; totalPaid += g.paidTotal;
+  });
+  document.getElementById("piutTotal").textContent = fmtRp(totalUnpaid);
+  document.getElementById("piutCount").textContent = countUnpaid;
+  document.getElementById("piutPeople").textContent = rows.filter(([,g])=>g.unpaid.length>0).length;
+  document.getElementById("piutPaidTotal").textContent = fmtRp(totalPaid);
+
+  rows.sort((a,b)=> b[1].unpaidTotal - a[1].unpaidTotal || a[1].name.localeCompare(b[1].name));
+  piutRowsSorted = rows;
+  const tbody = document.getElementById("piutangBody");
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="5"><div class="emptystate"><div class="ic">📒</div>Tidak ada tagihan pada rentang ini.</div></td></tr>`; return; }
+  tbody.innerHTML = rows.map(([,g], idx)=>`
+    <tr>
+      <td>${g.name}</td>
+      <td class="mono">${g.unpaid.length}</td>
+      <td class="mono" style="${g.unpaidTotal>0?'color:var(--accent-2);font-weight:600;':''}">${fmtRp(g.unpaidTotal)}</td>
+      <td class="mono">${g.lastDate ? new Date(g.lastDate).toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"}) : "-"}</td>
+      <td>
+        <div class="rowActions">
+          <button class="btn btn-ghost btn-sm" onclick="openPiutangDetail(${idx})">Lihat Detail</button>
+          ${currentUser.role==="admin" && g.unpaid.length>0 ? `<button class="btn btn-primary btn-sm" onclick="openBatchLunasModal(${idx})">✔ Terima Bayar</button>` : ""}
+        </div>
+      </td>
+    </tr>`).join("");
+}
+function openPiutangDetail(idx){
+  const entry = piutRowsSorted[idx];
+  if(!entry) return;
+  const [,g] = entry;
+  const rowsHtml = g.trx.map(([id,t])=>{
+    const dateLabel = new Date(t.date+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"short"});
+    const chk = !t.lunas ? `<input type="checkbox" class="piutChk" data-total="${t.total}" data-id="${id}" onchange="updatePiutSelectedTotal()" checked>` : "";
+    return `<tr>
+      <td>${chk}</td>
+      <td>${dateLabel}</td>
+      <td>${itemsSummary(t.items)}</td>
+      <td class="mono">${fmtRp(t.total)}</td>
+      <td>${t.lunas ? `<span class="badge badge-ok">Lunas</span>` : `<span class="badge badge-admin">Belum Lunas</span>`}</td>
+    </tr>`;
+  }).join("");
+  const body = `
+    <p style="margin-top:0;">Rincian tagihan atas nama <b>${g.name}</b>. ${g.unpaid.length} transaksi belum lunas senilai <b>${fmtRp(g.unpaidTotal)}</b>.</p>
+    <div class="tblwrap" style="max-height:360px;overflow-y:auto;"><table>
+      <thead><tr><th></th><th>Tanggal</th><th>Pesanan</th><th>Total</th><th>Status</th></tr></thead>
+      <tbody>${rowsHtml || '<tr><td colspan="5"><div class="emptystate">Tidak ada transaksi.</div></td></tr>'}</tbody>
+    </table></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap;gap:8px;">
+      <div style="font-size:13px;color:var(--cream-faint);">Total Terpilih: <b class="mono" id="piutSelectedTotal" style="color:var(--cream);">${fmtRp(g.unpaidTotal)}</b></div>
+      <button class="btn btn-ghost btn-sm" onclick="printPiutangStatement(${idx})">🖨 Cetak Tagihan</button>
+    </div>`;
+  const buttons = [{label:"Tutup", cls:"btn-ghost", onclick:"closeModal()"}];
+  if(currentUser.role==="admin" && g.unpaid.length>0){
+    buttons.push({label:"✔ Terima Pembayaran Terpilih", cls:"btn-primary", onclick:`openBatchLunasModal(${idx}, true)`});
+  }
+  openModal("Piutang · "+g.name, body, buttons, true);
+}
+function updatePiutSelectedTotal(){
+  const boxes = document.querySelectorAll(".piutChk:checked");
+  let total = 0; boxes.forEach(b=> total += Number(b.dataset.total||0));
+  const el = document.getElementById("piutSelectedTotal");
+  if(el) el.textContent = fmtRp(total);
+}
+function openBatchLunasModal(idx, fromDetail){
+  const entry = piutRowsSorted[idx];
+  if(!entry) return;
+  const [,g] = entry;
+  const selectedIds = fromDetail ? Array.from(document.querySelectorAll(".piutChk:checked")).map(b=>b.dataset.id) : g.unpaid.map(([id])=>id);
+  if(selectedIds.length===0){ toast("Pilih minimal satu tagihan yang belum lunas.", "err"); return; }
+  const total = selectedIds.reduce((s,id)=> s + (allTransactions[id] ? allTransactions[id].total : 0), 0);
+  const body = `
+    <p style="margin-top:0;">Terima pembayaran <b>${selectedIds.length}</b> tagihan atas nama <b>${g.name}</b> sebesar <b>${fmtRp(total)}</b>.</p>
+    <div class="field" style="margin-bottom:8px;">
+      <label>Dibayar Lewat</label>
+      <div class="payGrid" id="batchLunasPayGrid"></div>
+    </div>
+    <div class="field">
+      <label>Jumlah Diterima</label>
+      <input type="number" id="batchLunasAmountInput" min="0" value="${total}">
+    </div>`;
+  openModal("Terima Pembayaran Tagihan", body, [
+    {label:"Batal", cls:"btn-ghost", onclick:"closeModal()"},
+    {label:"✔ Konfirmasi Lunas", cls:"btn-primary", onclick:"confirmBatchLunas()"}
+  ], true);
+  let batchMethod = "Cash";
+  const wrap = document.getElementById("batchLunasPayGrid");
+  ["Cash","QRIS"].forEach(m=>{
+    const b = document.createElement("div");
+    b.className = "payBtn" + (m===batchMethod?" active":"");
+    b.textContent = m;
+    b.dataset.method = m;
+    b.onclick = ()=>{ batchMethod = m; wrap.querySelectorAll(".payBtn").forEach(x=>x.classList.toggle("active", x.dataset.method===m)); };
+    wrap.appendChild(b);
+  });
+  window._confirmBatchLunas = function(){
+    const amount = Number(document.getElementById("batchLunasAmountInput").value||0);
+    if(amount < total){ toast("Jumlah diterima kurang dari total tagihan terpilih.", "err"); return; }
+    const updates = {};
+    const now = Date.now();
+    selectedIds.forEach(id=>{
+      const t2 = allTransactions[id];
+      if(!t2 || t2.lunas) return;
+      updates["transactions/"+id+"/lunas"] = true;
+      updates["transactions/"+id+"/lunasMethod"] = batchMethod;
+      updates["transactions/"+id+"/lunasAt"] = now;
+      updates["transactions/"+id+"/lunasBy"] = currentUser.name;
+      updates["transactions/"+id+"/payAmount"] = t2.total;
+      updates["transactions/"+id+"/change"] = 0;
+    });
+    db.ref().update(updates).then(()=>{
+      toast(selectedIds.length+" tagihan atas nama "+g.name+" ditandai lunas & masuk ke pemasukan.", "ok");
+      logActivity("lunas_tagihan_batch", g.name+" - "+selectedIds.length+" trx - "+fmtRp(total)+" - "+batchMethod);
+      closeModal();
+    }).catch(err=> toast("Gagal: "+err.message, "err"));
+  };
+}
+function confirmBatchLunas(){ if(window._confirmBatchLunas) window._confirmBatchLunas(); }
+function printPiutangStatement(idx){
+  const entry = piutRowsSorted[idx];
+  if(!entry) return;
+  const [,g] = entry;
+  const from = document.getElementById("piutFrom").value;
+  const to = document.getElementById("piutTo").value;
+  const rows = [...g.trx].sort((a,b)=>a[1].timestamp-b[1].timestamp);
+  const trxRows = rows.map(([,t])=>`<tr><td>${new Date(t.date+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"short",year:"numeric"})}</td><td>${itemsSummary(t.items)}</td><td>${fmtRp(t.total)}</td><td>${t.lunas?"Lunas":"Belum Lunas"}</td></tr>`).join("");
+  document.getElementById("reportPrintArea").innerHTML = `
+    <h1>${settings.storeName||"Numpang Ngopi Cempaka"}</h1>
+    <div class="rp-sub">Rincian Tagihan · ${g.name} · ${from||"-"} s/d ${to||"-"} · Dicetak ${new Date().toLocaleString("id-ID")}</div>
+    <div class="rp-stats">
+      <div>Total Belum Lunas<b>${fmtRp(g.unpaidTotal)}</b></div>
+      <div>Jumlah Tagihan Belum Lunas<b>${g.unpaid.length}</b></div>
+      <div>Sudah Dibayar (Periode Ini)<b>${fmtRp(g.paidTotal)}</b></div>
+    </div>
+    <h2>Rincian Harian</h2>
+    <table><thead><tr><th>Tanggal</th><th>Pesanan</th><th>Total</th><th>Status</th></tr></thead><tbody>${trxRows||"<tr><td colspan=4>Tidak ada data.</td></tr>"}</tbody></table>`;
+  const pageStyle = document.createElement("style");
+  pageStyle.id = "reportPageStyle";
+  pageStyle.textContent = "@media print{ @page{ size:auto; margin:14mm; } }";
+  document.head.appendChild(pageStyle);
+  const cleanup = ()=>{ document.getElementById("reportPrintArea").innerHTML=""; pageStyle.remove(); window.removeEventListener("afterprint", cleanup); };
+  window.addEventListener("afterprint", cleanup);
+  window.print();
 }
 
 /* =========================================================
