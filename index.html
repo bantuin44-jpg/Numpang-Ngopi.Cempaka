@@ -12,6 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
   /* Default = Mode Berwarna (terang, colorful — seperti dashboard referensi) */
@@ -398,33 +400,61 @@ tr:hover td{background:rgba(244,234,216,.02);}
   .sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
   .sidebarOverlay.show{display:block;}
 }
+/* ===== Dashboard berwarna ===== */
+.heroBanner{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:22px 26px;border-radius:18px;margin-bottom:16px;color:#fff;background:linear-gradient(120deg,#7c2d12 0%,#c2410c 40%,#e08a1e 100%);box-shadow:0 16px 30px -14px rgba(194,65,12,.6);}
+.heroBanner::before{content:"";position:absolute;right:-50px;top:-70px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12);}
+.heroBanner::after{content:"";position:absolute;right:120px;bottom:-90px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.08);}
+.heroBanner>*{position:relative;z-index:1;}
+.heroHi{font-family:var(--font-display);font-weight:800;font-size:24px;line-height:1.2;}
+.heroDate{font-size:12.5px;opacity:.85;margin-top:3px;}
+.heroMsg{font-size:13.5px;margin-top:10px;background:rgba(255,255,255,.18);padding:7px 12px;border-radius:20px;display:inline-block;}
+.quickGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin-bottom:18px;}
+.qBtn{border:none;border-radius:14px;padding:14px 14px 13px;color:#fff;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;box-shadow:0 10px 20px -10px rgba(0,0,0,.35);transition:transform .12s,filter .12s;}
+.qBtn:hover{transform:translateY(-3px);filter:brightness(1.07);}
+.qBtn:active{transform:scale(.97);}
+.qBtn .qi{font-size:24px;line-height:1;}
+.q1{background:linear-gradient(135deg,#2563eb,#1d4ed8);} .q2{background:linear-gradient(135deg,#f59e0b,#d97706);} .q3{background:linear-gradient(135deg,#7c3aed,#5b21b6);}
+.q4{background:linear-gradient(135deg,#059669,#047857);} .q5{background:linear-gradient(135deg,#e11d48,#be123c);} .q6{background:linear-gradient(135deg,#25d366,#128c7e);}
+.statCard.sc5{background:linear-gradient(135deg,#7c3aed,#5b21b6);} .statCard.sc6{background:linear-gradient(135deg,#0891b2,#0e7490);}
+.statCard.sc7{background:linear-gradient(135deg,#db2777,#9d174d);} .statCard.sc8{background:linear-gradient(135deg,#4f46e5,#3730a3);}
+.statCard.sc-color::after{content:"";position:absolute;right:-26px;bottom:-34px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.14);pointer-events:none;}
+.trendPill{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);color:#fff;}
+.trendPill.down{background:rgba(0,0,0,.25);}
+.cc{border-top:4px solid var(--accent);} .cc-blue{border-top-color:#2563eb;} .cc-pink{border-top-color:#db2777;} .cc-teal{border-top-color:#0891b2;} .cc-amber{border-top-color:#d97706;}
+.cc h3{display:flex;align-items:center;gap:8px;}
+
+/* ===== Cetak / PDF (dikontrol lewat class di <body>: print-report / print-receipt) ===== */
 @media print{
-  @page{ size:58mm auto; margin:0; }
-  body *{visibility:hidden;}
-  #receiptArea,#receiptArea *{visibility:visible;}
-  #receiptArea{
-    position:absolute;top:0;left:0;
-    width:58mm;max-width:58mm;
-    padding:2mm 2.5mm;margin:0;
-    border-radius:0;
-    font-size:9.5px;line-height:1.4;
-  }
+  html,body{height:auto !important;min-height:0 !important;overflow:visible !important;background:#fff !important;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .toastWrap,.belFloatBtn,.radioFloatBtn,.radioPanel,#bootLoader{display:none !important;}
+  body.print-report > *:not(#reportPrintArea){display:none !important;}
+  body.print-receipt > *:not(#modalRoot){display:none !important;}
+  body.print-receipt .modalOverlay{position:static;display:block;background:none;padding:0;backdrop-filter:none;}
+  body.print-receipt .modal{max-width:none;max-height:none;overflow:visible;box-shadow:none;border:0;border-radius:0;background:#fff;}
+  body.print-receipt .modalHead,body.print-receipt .modalFoot{display:none;}
+  body.print-receipt .modalBody{padding:0;}
+  body.print-receipt #receiptArea{width:58mm;max-width:58mm;padding:2mm 2.5mm;margin:0;border-radius:0;font-size:9.5px;line-height:1.4;}
   #receiptArea .rc-logo img{max-width:88px;}
   #receiptArea .rc-meja .lbl{font-size:10px;}
   #receiptArea .rc-meja .num{font-size:40px;}
   #receiptArea table{font-size:9px;}
   #receiptArea .rc-line{margin:5px 0;}
-  #reportPrintArea{ display:block !important; position:absolute; top:0; left:0; width:100%;
-    padding:12mm; background:#fff; color:#111; font-family:var(--font-ui); visibility:visible; }
-  #reportPrintArea *{visibility:visible;}
-  #reportPrintArea h1{font-family:var(--font-display);font-size:20px;margin:0 0 2px;}
-  #reportPrintArea .rp-sub{font-size:11px;color:#555;margin-bottom:14px;}
-  #reportPrintArea .rp-stats{display:flex;gap:18px;margin-bottom:16px;flex-wrap:wrap;}
-  #reportPrintArea .rp-stats div{font-size:12px;}
-  #reportPrintArea .rp-stats b{display:block;font-size:15px;}
-  #reportPrintArea h2{font-size:13px;margin:16px 0 6px;border-bottom:1px solid #999;padding-bottom:3px;}
+  body.print-report #reportPrintArea{display:block !important;position:static;width:auto;padding:0;background:#fff;color:#111;font-family:var(--font-ui);}
+  #reportPrintArea h1{font-family:var(--font-display);font-size:21px;margin:0 0 3px;padding:12px 14px 0;color:#fff !important;background:#7c2d12;border-radius:8px 8px 0 0;}
+  #reportPrintArea .rp-sub{font-size:11px;color:#fff !important;background:#7c2d12;padding:0 14px 12px;border-radius:0 0 8px 8px;margin-bottom:14px;}
+  #reportPrintArea .rp-stats{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  #reportPrintArea .rp-stats div{flex:1 1 90px;font-size:10px;color:#fff !important;padding:8px 10px;border-radius:8px;background:#2563eb;text-transform:uppercase;letter-spacing:.03em;}
+  #reportPrintArea .rp-stats div:nth-child(2){background:#059669;} #reportPrintArea .rp-stats div:nth-child(3){background:#d97706;}
+  #reportPrintArea .rp-stats div:nth-child(4){background:#e11d48;} #reportPrintArea .rp-stats div:nth-child(5){background:#7c3aed;}
+  #reportPrintArea .rp-stats b{display:block;font-size:14px;margin-top:2px;color:#fff !important;text-transform:none;}
+  #reportPrintArea h2{font-size:13px;margin:16px 0 6px;border-bottom:2px solid #c2410c;padding-bottom:3px;color:#7c2d12 !important;break-after:avoid;page-break-after:avoid;}
   #reportPrintArea table{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:10px;}
-  #reportPrintArea th,#reportPrintArea td{border:1px solid #ccc;padding:4px 6px;text-align:left;}
+  #reportPrintArea thead{display:table-header-group;}
+  #reportPrintArea tr{break-inside:avoid;page-break-inside:avoid;}
+  #reportPrintArea th,#reportPrintArea td{border:1px solid #d5d9e4;padding:4px 6px;text-align:left;color:#111 !important;background:transparent !important;}
+  #reportPrintArea th{background:#f3e8dc !important;font-weight:700;text-transform:none;letter-spacing:0;}
+  #reportPrintArea tbody tr:nth-child(even) td{background:#faf6f1 !important;}
 }
 </style>
 </head>
@@ -456,7 +486,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
       <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
     </div>
     <button class="btn btn-primary" id="btnLogin" onclick="doLogin()">Masuk</button>
-    <div class="loginFoot">Sistem Kasir &amp; Laporan Internal · v1.0</div>
+    <div class="loginFoot">Sistem Kasir &amp; Laporan Internal · v1.1</div>
   </div>
 </div>
 
@@ -499,22 +529,40 @@ tr:hover td{background:rgba(244,234,216,.02);}
     <div class="viewBody" id="viewBody">
       <!-- ===== DASHBOARD ===== -->
       <div id="view-dashboard" class="viewpane hidden">
-        <div class="grid g4" style="margin-bottom:18px;">
-          <div class="card statCard sc-color sc1"><div class="ic">💰</div><div class="lbl">Penjualan Hari Ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div></div>
+        <div class="heroBanner">
+          <div>
+            <div class="heroHi" id="heroHi">Halo! ☕</div>
+            <div class="heroDate" id="heroDate">-</div>
+            <div class="heroMsg" id="heroMsg">-</div>
+          </div>
+        </div>
+        <div class="quickGrid">
+          <button class="qBtn q1" onclick="switchView('pos')"><span class="qi">🛒</span>Transaksi Baru</button>
+          <button class="qBtn q2" onclick="switchView('dapur')"><span class="qi">🍳</span>Layar Dapur</button>
+          <button class="qBtn q3" onclick="switchView('piutang')"><span class="qi">📒</span>Tagihan</button>
+          <button class="qBtn q4" onclick="switchView('laporan')"><span class="qi">📈</span>Laporan</button>
+          <button class="qBtn q5" onclick="quickPdfToday()"><span class="qi">📄</span>PDF Hari Ini</button>
+          <button class="qBtn q6" onclick="shareRingkasanWA()"><span class="qi">💬</span>Kirim Ringkasan WA</button>
+        </div>
+        <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc1"><div class="ic">💰</div><div class="lbl">Penjualan Hari Ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div><span class="trendPill" id="dashSalesTrend">-</span></div>
           <div class="card statCard sc-color sc2"><div class="ic">🧾</div><div class="lbl">Jumlah Transaksi</div><div class="val" id="dashTrx">0</div><div class="sub">Hari ini</div></div>
           <div class="card statCard sc-color sc3"><div class="ic">⭐</div><div class="lbl">Produk Terlaris</div><div class="val" id="dashTop" style="font-size:16px;">-</div><div class="sub" id="dashTopSub">-</div></div>
           <div class="card statCard sc-color sc4"><div class="ic">📊</div><div class="lbl">Rata-rata Transaksi</div><div class="val" id="dashAvg">Rp0</div><div class="sub">Per struk</div></div>
         </div>
-        <div class="grid g4" style="margin-bottom:18px;">
-          <div class="card statCard" style="grid-column:span 2;"><div class="ic">📋</div><div class="lbl">Piutang Tagihan Belum Lunas</div><div class="val" id="dashPiutang" style="color:var(--accent-2);">Rp0</div><div class="sub" id="dashPiutangSub">-</div></div>
+        <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc5"><div class="ic">📋</div><div class="lbl">Piutang Belum Lunas</div><div class="val" id="dashPiutang">Rp0</div><div class="sub" id="dashPiutangSub">-</div></div>
+          <div class="card statCard sc-color sc6"><div class="ic">⏰</div><div class="lbl">Jam Tersibuk</div><div class="val" id="dashPeak" style="font-size:19px;">-</div><div class="sub" id="dashPeakSub">-</div></div>
+          <div class="card statCard sc-color sc7"><div class="ic">🍽</div><div class="lbl">Dine In / Takeaway</div><div class="val" id="dashMix">0 / 0</div><div class="sub" id="dashMixSub">-</div></div>
+          <div class="card statCard sc-color sc8"><div class="ic">📅</div><div class="lbl">Penjualan Kemarin</div><div class="val" id="dashYesterday">Rp0</div><div class="sub" id="dashYesterdaySub">-</div></div>
+        </div>
+        <div class="grid g2" style="margin-bottom:16px;">
+          <div class="card cc cc-blue"><h3 style="margin-top:0;font-family:var(--font-display);">📈 Penjualan 7 Hari</h3><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
+          <div class="card cc cc-pink"><h3 style="margin-top:0;font-family:var(--font-display);">💳 Metode Pembayaran (Hari Ini)</h3><div class="chartBox"><canvas id="chartPayment"></canvas></div></div>
         </div>
         <div class="grid g2">
-          <div class="card"><h3 style="margin-top:0;font-family:var(--font-display);">Penjualan 7 Hari</h3><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
-          <div class="card"><h3 style="margin-top:0;font-family:var(--font-display);">Metode Pembayaran (Hari Ini)</h3><div class="chartBox"><canvas id="chartPayment"></canvas></div></div>
-        </div>
-        <div class="card" style="margin-top:16px;">
-          <h3 style="margin-top:0;font-family:var(--font-display);">Produk Terlaris (7 Hari)</h3>
-          <div class="chartBox" style="height:260px;"><canvas id="chartTopProduct"></canvas></div>
+          <div class="card cc cc-teal"><h3 style="margin-top:0;font-family:var(--font-display);">⏰ Penjualan per Jam (Hari Ini)</h3><div class="chartBox"><canvas id="chartHourly"></canvas></div></div>
+          <div class="card cc cc-amber"><h3 style="margin-top:0;font-family:var(--font-display);">⭐ Produk Terlaris (7 Hari)</h3><div class="chartBox"><canvas id="chartTopProduct"></canvas></div></div>
         </div>
       </div>
 
@@ -688,8 +736,9 @@ tr:hover td{background:rgba(244,234,216,.02);}
               </div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
-              <button class="btn btn-primary btn-sm" onclick="printLaporan()">🖨 Cetak / PDF</button>
+              <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
+              <button class="btn btn-ghost btn-sm" onclick="printLaporan()">🖨 Cetak</button>
+              <button class="btn btn-primary btn-sm" onclick="downloadLaporanPDF()">📄 Download PDF</button>
             </div>
           </div>
         </div>
@@ -832,7 +881,8 @@ let currentView = "dashboard";
 let menuTab = "produk", stokTab = "stok", lapTab = "penjualan";
 let editingProdId = null, editingCatId = null, editingUserId = null;
 let lastTrxData = null;
-let chartWeekly = null, chartPayment = null, chartTopProduct = null;
+let chartWeekly = null, chartPayment = null, chartTopProduct = null, chartHourly = null;
+let dashSnap = {};
 
 const PAY_METHODS = ["Cash","QRIS","Tagihan"];
 const ORDER_TYPES = ["Takeaway","Dine In"];
@@ -1434,7 +1484,7 @@ function showReceipt(trx){
     </div>`;
   openModal("Struk Transaksi", body, [
     {label:"Tutup", cls:"btn-ghost", onclick:"closeModal()"},
-    {label:"🖨 Cetak", cls:"btn-primary", onclick:"window.print()"}
+    {label:"🖨 Cetak", cls:"btn-primary", onclick:"doPrint('receipt')"}
   ], true);
 }
 
@@ -1734,13 +1784,7 @@ function printPiutangStatement(idx){
     </div>
     <h2>Rincian Harian</h2>
     <table><thead><tr><th>Tanggal</th><th>Pesanan</th><th>Total</th><th>Status</th></tr></thead><tbody>${trxRows||"<tr><td colspan=4>Tidak ada data.</td></tr>"}</tbody></table>`;
-  const pageStyle = document.createElement("style");
-  pageStyle.id = "reportPageStyle";
-  pageStyle.textContent = "@media print{ @page{ size:auto; margin:14mm; } }";
-  document.head.appendChild(pageStyle);
-  const cleanup = ()=>{ document.getElementById("reportPrintArea").innerHTML=""; pageStyle.remove(); window.removeEventListener("afterprint", cleanup); };
-  window.addEventListener("afterprint", cleanup);
-  window.print();
+  doPrint("report");
 }
 
 /* =========================================================
@@ -1770,38 +1814,84 @@ function renderDashboard(){
   document.getElementById("dashTop").textContent = topEntry ? topEntry[0] : "-";
   document.getElementById("dashTopSub").textContent = topEntry ? topEntry[1]+" terjual hari ini" : "Belum ada data";
 
-  // 7-day chart
-  const days = []; const labels=[];
-  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); const key=d.toISOString().slice(0,10); days.push(key); labels.push(d.toLocaleDateString("id-ID",{weekday:"short"})); }
-  const weeklyData = days.map(dk => Object.values(allTransactions||{}).filter(t=>t.date===dk && t.status!=="void" && isLunas(t)).reduce((s,t)=>s+t.total,0));
-  const ctx1 = document.getElementById("chartWeekly");
-  if(typeof Chart === "undefined" || !ctx1) return; // library grafik belum siap atau canvas belum ada, lewati render chart kali ini
-  if(chartWeekly) chartWeekly.destroy();
-  chartWeekly = new Chart(ctx1, { type:"line", data:{ labels, datasets:[{ label:"Penjualan", data:weeklyData, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.14)", tension:.35, fill:true, pointRadius:3 }]}, options: chartOpts() });
+  // ---- statistik tambahan & hero ----
+  const dayKeys = [], dayLabels = [];
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); dayKeys.push(d.toISOString().slice(0,10)); dayLabels.push(d.toLocaleDateString("id-ID",{weekday:"short"})); }
+  const allTrx = Object.values(allTransactions||{}).filter(t=>t.status!=="void");
+  const salesOn = key => allTrx.filter(t=>t.date===key && isLunas(t)).reduce((s,t)=>s+t.total,0);
+  const ydKey = dayKeys[5];
+  const ySales = salesOn(ydKey);
+  const yCount = allTrx.filter(t=>t.date===ydKey).length;
+  const setTxt = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  let trendTxt = "Belum ada pembanding kemarin", trendCls = "";
+  if(ySales>0){ const pct=Math.round((totalSales-ySales)/ySales*100); trendTxt=(pct>=0?"▲ ":"▼ ")+Math.abs(pct)+"% vs kemarin"; trendCls=pct>=0?"":"down"; }
+  else if(totalSales>0){ trendTxt="▲ Kemarin belum ada penjualan"; }
+  const tEl = document.getElementById("dashSalesTrend"); if(tEl){ tEl.textContent=trendTxt; tEl.className="trendPill "+trendCls; }
 
-  // payment method chart (today, hanya yang sudah masuk pemasukan)
+  const hourly = Array(24).fill(0), hourCnt = Array(24).fill(0);
+  todayPaidTrx.forEach(t=>{ const h=new Date(t.timestamp||Date.now()).getHours(); hourly[h]+=t.total; hourCnt[h]++; });
+  let peakH = -1; hourCnt.forEach((c,h)=>{ if(c>0 && (peakH<0 || c>hourCnt[peakH])) peakH=h; });
+  const hh = n => String(n%24).padStart(2,"0")+":00";
+  setTxt("dashPeak", peakH>=0 ? hh(peakH)+" – "+hh(peakH+1) : "-");
+  setTxt("dashPeakSub", peakH>=0 ? hourCnt[peakH]+" transaksi lunas" : "Belum ada data");
+  const dineN = todayTrx.filter(t=>t.orderType==="Dine In").length;
+  setTxt("dashMix", dineN+" / "+(todayTrx.length-dineN));
+  setTxt("dashMixSub", "Pesanan hari ini");
+  setTxt("dashYesterday", fmtRp(ySales));
+  setTxt("dashYesterdaySub", yCount+" transaksi kemarin");
+
+  const hr = new Date().getHours();
+  const sapa = hr<11 ? "Selamat pagi" : hr<15 ? "Selamat siang" : hr<18 ? "Selamat sore" : "Selamat malam";
+  setTxt("heroHi", sapa+", "+((currentUser&&currentUser.name)||"Owner")+"! ☕");
+  setTxt("heroDate", new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"}));
+  setTxt("heroMsg", totalSales>0 ? "Hari ini sudah masuk "+fmtRp(totalSales)+" dari "+todayPaidTrx.length+" transaksi lunas." : "Belum ada penjualan lunas hari ini. Semangat buka toko!");
+  dashSnap = { totalSales, trx:todayTrx.length, avg: todayPaidTrx.length ? totalSales/todayPaidTrx.length : 0, top:topEntry, piutang:piutangTotal, piutangN:todayUnpaid.length, peakH, trend:trendTxt };
+
+  if(typeof Chart === "undefined") return; // library grafik belum siap
+  const PAL = ["#2563eb","#059669","#d97706","#e11d48","#7c3aed","#0891b2","#db2777","#4f46e5"];
+  const dimTxt = getComputedStyle(document.body).getPropertyValue("--cream-dim").trim() || "#5c6478";
+
+  const ctx1 = document.getElementById("chartWeekly");
+  if(ctx1){
+    if(chartWeekly) chartWeekly.destroy();
+    const g = ctx1.getContext("2d").createLinearGradient(0,0,0,230);
+    g.addColorStop(0,"rgba(37,99,235,.45)"); g.addColorStop(1,"rgba(124,58,237,.03)");
+    chartWeekly = new Chart(ctx1, { type:"line", data:{ labels:dayLabels, datasets:[{ label:"Penjualan", data:dayKeys.map(salesOn), borderColor:"#2563eb", backgroundColor:g, tension:.4, fill:true, borderWidth:3, pointRadius:4, pointBackgroundColor:"#fff", pointBorderColor:"#2563eb", pointBorderWidth:2 }]}, options: chartOpts(true) });
+  }
+
   const payAgg = {};
   todayPaidTrx.forEach(t=>{ payAgg[t.payMethod]=(payAgg[t.payMethod]||0)+t.total; });
   const ctx2 = document.getElementById("chartPayment");
-  if(chartPayment) chartPayment.destroy();
-  chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:["#2563eb","#d97706","#059669","#e11d48","#7c3aed","#0891b2"] }]}, options:{ ...chartOpts(), plugins:{legend:{position:"bottom", labels:{color:getComputedStyle(document.body).getPropertyValue("--cream-dim").trim()||"#5c6478"}}} } });
+  if(ctx2){
+    if(chartPayment) chartPayment.destroy();
+    chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:PAL, borderWidth:3, borderColor:getComputedStyle(document.body).getPropertyValue("--surface").trim()||"#fff" }]}, options:{ responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{ legend:{ position:"bottom", labels:{ color:dimTxt, usePointStyle:true } }, tooltip:{ callbacks:{ label:c=>" "+c.label+": "+fmtRp(c.parsed) } } } } });
+  }
 
-  // top product 7 days
-  const weekTrx = Object.values(allTransactions||{}).filter(t=>days.includes(t.date) && t.status!=="void");
+  const ctxH = document.getElementById("chartHourly");
+  if(ctxH){
+    if(chartHourly) chartHourly.destroy();
+    const hrs = []; for(let h=6;h<=23;h++) hrs.push(h);
+    chartHourly = new Chart(ctxH, { type:"bar", data:{ labels:hrs.map(h=>String(h).padStart(2,"0")), datasets:[{ label:"Penjualan", data:hrs.map(h=>hourly[h]), backgroundColor:hrs.map(h=>h===peakH?"#e11d48":"#0891b2"), borderRadius:6 }]}, options: chartOpts(true) });
+  }
+
+  const weekTrx = allTrx.filter(t=>dayKeys.includes(t.date));
   const prodAgg = {};
   weekTrx.forEach(t=> (t.items||[]).forEach(i=>{ prodAgg[i.name]=(prodAgg[i.name]||0)+i.qty; }));
   const topProds = Object.entries(prodAgg).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const ctx3 = document.getElementById("chartTopProduct");
-  if(chartTopProduct) chartTopProduct.destroy();
-  chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor:"#d97706", borderRadius:6 }]}, options: { ...chartOpts(), indexAxis:"y" } });
+  if(ctx3){
+    if(chartTopProduct) chartTopProduct.destroy();
+    chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor: topProds.map((_,i)=>PAL[i%PAL.length]), borderRadius:6 }]}, options: { ...chartOpts(false), indexAxis:"y" } });
+  }
 }
-function chartOpts(){
+function chartOpts(money){
   const cs = getComputedStyle(document.body);
   const faint = cs.getPropertyValue("--cream-faint").trim() || "#8f8270";
-  const lineColor = document.body.classList.contains("theme-light") ? "rgba(42,32,21,.08)" : "rgba(244,234,216,.06)";
+  const lineColor = document.body.classList.contains("theme-dark") ? "rgba(244,234,216,.08)" : "rgba(30,36,51,.07)";
+  const short = v => v>=1e6 ? (v/1e6)+"jt" : v>=1e3 ? (v/1e3)+"rb" : v;
   return { responsive:true, maintainAspectRatio:false,
-    scales:{ x:{ ticks:{color:faint}, grid:{color:lineColor} }, y:{ ticks:{color:faint}, grid:{color:lineColor} } },
-    plugins:{ legend:{display:false} } };
+    scales:{ x:{ ticks:{color:faint}, grid:{color:lineColor} }, y:{ beginAtZero:true, ticks:{color:faint, callback: money ? short : undefined}, grid:{color:lineColor} } },
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=> " "+(money ? fmtRp(c.parsed.y) : (c.parsed.x!==undefined && c.chart.options.indexAxis==="y" ? c.parsed.x : c.parsed.y)) } } } };
 }
 
 /* =========================================================
@@ -2233,6 +2323,7 @@ function exportCSV(){
   a.click(); URL.revokeObjectURL(url);
 }
 function printLaporan(){
+  runLaporan();
   if(lapFilteredTrx.length===0){ toast("Tidak ada data untuk dicetak.", "err"); return; }
   const from = document.getElementById("lapFrom").value;
   const to = document.getElementById("lapTo").value;
@@ -2274,13 +2365,116 @@ function printLaporan(){
     <h2>Daftar Transaksi</h2>
     <table><thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Kasir</th><th>Jenis</th><th>Total</th><th>Metode</th><th>Status Bayar</th></tr></thead><tbody>${trxRows||"<tr><td colspan=7>Tidak ada data.</td></tr>"}</tbody></table>`;
 
-  const pageStyle = document.createElement("style");
-  pageStyle.id = "reportPageStyle";
-  pageStyle.textContent = "@media print{ @page{ size:auto; margin:14mm; } }";
-  document.head.appendChild(pageStyle);
-  const cleanup = ()=>{ document.getElementById("reportPrintArea").innerHTML=""; pageStyle.remove(); window.removeEventListener("afterprint", cleanup); };
+  doPrint("report");
+}
+
+/* =========================================================
+   CETAK, PDF & BAGIKAN
+========================================================= */
+function doPrint(mode){
+  document.getElementById("printPageStyle")?.remove();
+  document.body.classList.remove("print-report","print-receipt");
+  const st = document.createElement("style");
+  st.id = "printPageStyle";
+  st.textContent = mode==="receipt" ? "@page{size:58mm auto;margin:0;}" : "@page{size:A4 portrait;margin:12mm;}";
+  document.head.appendChild(st);
+  document.body.classList.add("print-"+mode);
+  let done = false;
+  const cleanup = ()=>{
+    if(done) return; done = true;
+    window.removeEventListener("afterprint", cleanup);
+    // ditunda: di HP/Safari afterprint kadang terpanggil sebelum pratinjau selesai dibuat
+    setTimeout(()=>{ document.body.classList.remove("print-"+mode); st.remove(); }, 1200);
+  };
   window.addEventListener("afterprint", cleanup);
-  window.print();
+  setTimeout(cleanup, 120000);
+  setTimeout(()=> window.print(), 80);
+}
+const pdfTxt = s => String(s==null ? "" : s).replace(/[^\x20-\x7E\u00A0-\u00FF]/g,"").trim();
+
+function downloadLaporanPDF(){
+  runLaporan();
+  if(lapFilteredTrx.length===0){ toast("Tidak ada data untuk diunduh.", "err"); return; }
+  const J = window.jspdf && window.jspdf.jsPDF;
+  if(!J){ toast("Library PDF belum termuat, memakai cetak biasa.", "err"); printLaporan(); return; }
+  try{
+    const from = document.getElementById("lapFrom").value, to = document.getElementById("lapTo").value;
+    const valid = lapFilteredTrx.filter(([,t])=>t.status!=="void");
+    const paidValid = valid.filter(([,t])=>isLunas(t));
+    const total = paidValid.reduce((s,[,t])=>s+t.total,0);
+    const avg = paidValid.length ? total/paidValid.length : 0;
+    const itemsSold = valid.reduce((s,[,t])=>s+(t.items||[]).reduce((x,i)=>x+i.qty,0),0);
+    const piutang = valid.filter(([,t])=>t.payMethod==="Tagihan" && !t.lunas).reduce((s,[,t])=>s+t.total,0);
+    const prodAgg = {};
+    valid.forEach(([,t])=> (t.items||[]).forEach(i=>{ if(!prodAgg[i.name]) prodAgg[i.name]={qty:0,total:0}; prodAgg[i.name].qty+=i.qty; prodAgg[i.name].total+=i.subtotal; }));
+    const payAgg = {};
+    paidValid.forEach(([,t])=>{ if(!payAgg[t.payMethod]) payAgg[t.payMethod]={count:0,total:0}; payAgg[t.payMethod].count++; payAgg[t.payMethod].total+=t.total; });
+
+    const doc = new J({unit:"pt", format:"a4"});
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    doc.setFillColor(124,45,18); doc.rect(0,0,W,80,"F");
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(19);
+    doc.text(pdfTxt(settings.storeName||"Numpang Ngopi Cempaka"), 36, 36);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10);
+    doc.text("Laporan Penjualan  |  "+from+" s/d "+to, 36, 55);
+    doc.text("Dicetak "+new Date().toLocaleString("id-ID"), 36, 69);
+
+    const stats = [["Total Penjualan",fmtRp(total),[37,99,235]],["Transaksi",String(valid.length),[5,150,105]],["Rata-rata",fmtRp(avg),[217,119,6]],["Item Terjual",String(itemsSold),[225,29,72]],["Piutang",fmtRp(piutang),[124,58,237]]];
+    const gap = 8, bw = (W-72-gap*4)/5;
+    stats.forEach((s,i)=>{
+      const x = 36+i*(bw+gap);
+      doc.setFillColor(s[2][0],s[2][1],s[2][2]); doc.roundedRect(x,96,bw,48,6,6,"F");
+      doc.setTextColor(255,255,255); doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.text(s[0].toUpperCase(), x+8, 111);
+      doc.setFont("helvetica","bold"); doc.setFontSize(10.5); doc.text(s[1], x+8, 131);
+    });
+
+    const section = (title, head, body, y, aligns)=>{
+      if(y > H-110){ doc.addPage(); y = 48; }
+      doc.setTextColor(124,45,18); doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.text(title, 36, y);
+      const cs = {}; (aligns||[]).forEach((a,i)=>{ if(a) cs[i]={halign:a}; });
+      doc.autoTable({ startY:y+8, head:[head], body, theme:"striped", margin:{left:36,right:36},
+        styles:{fontSize:8.5, cellPadding:4, textColor:[30,36,51]}, headStyles:{fillColor:[124,45,18], textColor:255},
+        alternateRowStyles:{fillColor:[250,246,241]}, columnStyles:cs });
+      return doc.lastAutoTable.finalY + 22;
+    };
+    let y = 172;
+    y = section("Produk Terjual", ["Produk","Qty","Total"],
+      Object.entries(prodAgg).sort((a,b)=>b[1].qty-a[1].qty).map(([n,d])=>[pdfTxt(n),String(d.qty),fmtRp(d.total)]), y, [null,"right","right"]);
+    y = section("Rekap Pembayaran (Sudah Masuk Pemasukan)", ["Metode","Jumlah Trx","Total"],
+      Object.entries(payAgg).sort((a,b)=>b[1].total-a[1].total).map(([n,d])=>[pdfTxt(n),String(d.count),fmtRp(d.total)]), y, [null,"right","right"]);
+    section("Daftar Transaksi", ["No. Transaksi","Tanggal","Kasir","Jenis","Total","Metode","Status Bayar"],
+      [...valid].sort((a,b)=>b[1].timestamp-a[1].timestamp).map(([,t])=>[pdfTxt(t.trxNo),t.date,pdfTxt(t.kasirName),t.orderType||"Takeaway",fmtRp(t.total),pdfTxt(payMethodLabel(t)),t.payMethod==="Tagihan"?(t.lunas?"Lunas":"Belum Lunas"):"Lunas"]), y, [null,null,null,null,"right"]);
+
+    const pages = doc.getNumberOfPages();
+    for(let i=1;i<=pages;i++){
+      doc.setPage(i); doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(130,130,130);
+      doc.text(pdfTxt(settings.storeName||"Numpang Ngopi Cempaka"), 36, H-18);
+      doc.text("Halaman "+i+" / "+pages, W-36, H-18, {align:"right"});
+    }
+    doc.save("laporan-numpang-ngopi-"+from+(from===to?"":"_sd_"+to)+".pdf");
+    toast("PDF laporan berhasil diunduh.", "ok");
+  }catch(err){
+    console.error("PDF gagal", err);
+    toast("Gagal membuat PDF, memakai cetak biasa.", "err");
+    printLaporan();
+  }
+}
+function quickPdfToday(){
+  const t = todayStr();
+  document.getElementById("lapFrom").value = t;
+  document.getElementById("lapTo").value = t;
+  downloadLaporanPDF();
+}
+function shareRingkasanWA(){
+  const d = dashSnap || {};
+  const tgl = new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const text = "*"+(settings.storeName||"Numpang Ngopi Cempaka")+"*\nRingkasan "+tgl+"\n\n"+
+    "💰 Penjualan: "+fmtRp(d.totalSales)+(d.trend ? " ("+d.trend+")" : "")+"\n"+
+    "🧾 Transaksi: "+(d.trx||0)+"\n"+
+    "📊 Rata-rata: "+fmtRp(d.avg)+"\n"+
+    "⭐ Terlaris: "+(d.top ? d.top[0]+" ("+d.top[1]+" terjual)" : "-")+"\n"+
+    "📒 Piutang: "+fmtRp(d.piutang)+" ("+(d.piutangN||0)+" tagihan)";
+  window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
 }
 
 /* =========================================================
