@@ -738,6 +738,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
             <div style="display:flex;gap:8px;">
               <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
               <button class="btn btn-ghost btn-sm" onclick="printLaporan()">🖨 Cetak</button>
+              <button class="btn btn-ghost btn-sm" onclick="shareLaporanWA()">💬 Kirim WA</button>
               <button class="btn btn-primary btn-sm" onclick="downloadLaporanPDF()">📄 Download PDF</button>
             </div>
           </div>
@@ -2465,16 +2466,120 @@ function quickPdfToday(){
   document.getElementById("lapTo").value = t;
   downloadLaporanPDF();
 }
-function shareRingkasanWA(){
-  const d = dashSnap || {};
-  const tgl = new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-  const text = "*"+(settings.storeName||"Numpang Ngopi Cempaka")+"*\nRingkasan "+tgl+"\n\n"+
-    "💰 Penjualan: "+fmtRp(d.totalSales)+(d.trend ? " ("+d.trend+")" : "")+"\n"+
-    "🧾 Transaksi: "+(d.trx||0)+"\n"+
-    "📊 Rata-rata: "+fmtRp(d.avg)+"\n"+
-    "⭐ Terlaris: "+(d.top ? d.top[0]+" ("+d.top[1]+" terjual)" : "-")+"\n"+
-    "📒 Piutang: "+fmtRp(d.piutang)+" ("+(d.piutangN||0)+" tagihan)";
+function shareRingkasanWA(fromArg, toArg){
+  const from = (typeof fromArg === "string" && fromArg) ? fromArg : todayStr();
+  const to   = (typeof toArg === "string" && toArg) ? toArg : from;
+  const store = settings.storeName || "Numpang Ngopi Cempaka";
+  const fmtD = s => new Date(s+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const periode = from===to ? fmtD(from) : fmtD(from)+" s/d "+fmtD(to);
+
+  const all   = Object.values(allTransactions||{}).filter(t=>t.date>=from && t.date<=to);
+  const valid = all.filter(t=>t.status!=="void");
+  const paid  = valid.filter(isLunas);
+  const voids = all.length - valid.length;
+  if(valid.length===0){ toast("Belum ada transaksi pada periode ini.", "err"); return; }
+
+  const total   = paid.reduce((s,t)=>s+t.total,0);
+  const avg     = paid.length ? total/paid.length : 0;
+  const itemsSold = valid.reduce((s,t)=>s+(t.items||[]).reduce((a,i)=>a+i.qty,0),0);
+  const unpaid  = valid.filter(t=>t.payMethod==="Tagihan" && !t.lunas);
+  const piutang = unpaid.reduce((s,t)=>s+t.total,0);
+  const disc    = valid.reduce((s,t)=>s+(t.discount||0),0);
+
+  // Dine In vs Takeaway
+  const dine = paid.filter(t=>t.orderType==="Dine In");
+  const take = paid.filter(t=>t.orderType!=="Dine In");
+  const dineTot = dine.reduce((s,t)=>s+t.total,0);
+  const takeTot = take.reduce((s,t)=>s+t.total,0);
+
+  // Produk terjual
+  const prodAgg = {};
+  valid.forEach(t=>(t.items||[]).forEach(i=>{
+    if(!prodAgg[i.name]) prodAgg[i.name]={qty:0,total:0};
+    prodAgg[i.name].qty+=i.qty; prodAgg[i.name].total+=i.subtotal;
+  }));
+  const prodLines = Object.entries(prodAgg).sort((a,b)=>b[1].qty-a[1].qty)
+    .map(([n,d],i)=>`${i+1}. ${n} — ${d.qty}x • ${fmtRp(d.total)}`);
+
+  // Rekap pembayaran
+  const payAgg = {};
+  paid.forEach(t=>{
+    const m = t.payMethod==="Tagihan" ? "Tagihan (Lunas)" : t.payMethod;
+    if(!payAgg[m]) payAgg[m]={c:0,t:0}; payAgg[m].c++; payAgg[m].t+=t.total;
+  });
+  const payLines = Object.entries(payAgg).sort((a,b)=>b[1].t-a[1].t)
+    .map(([n,d])=>`• ${n}: ${d.c} trx • ${fmtRp(d.t)}`);
+
+  // Per kasir
+  const kasAgg = {};
+  paid.forEach(t=>{ const k=t.kasirName||"-"; if(!kasAgg[k]) kasAgg[k]={c:0,t:0}; kasAgg[k].c++; kasAgg[k].t+=t.total; });
+  const kasLines = Object.entries(kasAgg).sort((a,b)=>b[1].t-a[1].t)
+    .map(([n,d])=>`• ${n}: ${d.c} trx • ${fmtRp(d.t)}`);
+
+  // Piutang per nama
+  const piutAgg = {};
+  unpaid.forEach(t=>{ const n=(t.tagihanName||"(Tanpa Nama)").trim(); if(!piutAgg[n]) piutAgg[n]={c:0,t:0}; piutAgg[n].c++; piutAgg[n].t+=t.total; });
+  const piutLines = Object.entries(piutAgg).sort((a,b)=>b[1].t-a[1].t)
+    .map(([n,d])=>`• ${n}: ${d.c} tagihan • ${fmtRp(d.t)}`);
+
+  // Daftar transaksi
+  const sorted = [...valid].sort((a,b)=>a.timestamp-b.timestamp);
+  const trxLine = (t,i,withItems)=>{
+    const jam = new Date(t.timestamp).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}).replace(".",":");
+    const jenis = t.orderType==="Dine In" ? "Meja "+(t.mejaNo||"-") : "Takeaway";
+    const st = t.payMethod==="Tagihan" ? (t.lunas ? "Lunas" : "BELUM LUNAS") : t.payMethod;
+    const tgl = from===to ? "" : t.date.slice(5)+" ";
+    let s = `${i+1}. ${tgl}${jam} • ${jenis} • ${fmtRp(t.total)} • ${st}${t.tagihanName?" ("+t.tagihanName+")":""}`;
+    if(withItems) s += `\n    _${itemsSummary(t.items)}_`;
+    return s;
+  };
+
+  const compose = (withItems, maxTrx)=>{
+    const shown = sorted.slice(0, maxTrx);
+    const L = [];
+    L.push(`☕ *${store.toUpperCase()}*`);
+    L.push(`📋 *LAPORAN PENJUALAN*`);
+    L.push(`🗓 ${periode}`);
+    L.push(`🕒 Dikirim ${new Date().toLocaleString("id-ID")}`);
+    L.push(``, `━━━━━━━━━━━━━━━━━━`, `📊 *RINGKASAN*`, `━━━━━━━━━━━━━━━━━━`);
+    L.push(`💰 Total Penjualan (Lunas): *${fmtRp(total)}*`);
+    L.push(`🧾 Jumlah Transaksi: *${valid.length}*`);
+    L.push(`📈 Rata-rata / Struk: *${fmtRp(avg)}*`);
+    L.push(`📦 Item Terjual: *${itemsSold}*`);
+    L.push(`📒 Piutang Belum Lunas: *${fmtRp(piutang)}* (${unpaid.length} tagihan)`);
+    if(disc>0) L.push(`🏷 Total Diskon: ${fmtRp(disc)}`);
+    if(voids>0) L.push(`🚫 Transaksi Void: ${voids}`);
+    L.push(``, `🍽 *Dine In vs Takeaway*`);
+    L.push(`• Dine In: ${dine.length} trx • ${fmtRp(dineTot)}`);
+    L.push(`• Takeaway: ${take.length} trx • ${fmtRp(takeTot)}`);
+    L.push(``, `━━━━━━━━━━━━━━━━━━`, `🛒 *PRODUK TERJUAL*`, `━━━━━━━━━━━━━━━━━━`);
+    L.push(...(prodLines.length?prodLines:["-"]));
+    L.push(``, `━━━━━━━━━━━━━━━━━━`, `💳 *REKAP PEMBAYARAN*`, `_(sudah masuk pemasukan)_`, `━━━━━━━━━━━━━━━━━━`);
+    L.push(...(payLines.length?payLines:["-"]));
+    L.push(``, `👤 *Per Kasir*`, ...(kasLines.length?kasLines:["-"]));
+    if(piutLines.length){
+      L.push(``, `━━━━━━━━━━━━━━━━━━`, `📒 *PIUTANG BELUM LUNAS*`, `━━━━━━━━━━━━━━━━━━`, ...piutLines);
+    }
+    L.push(``, `━━━━━━━━━━━━━━━━━━`, `🧾 *DAFTAR TRANSAKSI*`, `━━━━━━━━━━━━━━━━━━`);
+    L.push(...shown.map((t,i)=>trxLine(t,i,withItems)));
+    if(shown.length < sorted.length) L.push(`_... +${sorted.length-shown.length} transaksi lagi, lihat selengkapnya di PDF_`);
+    L.push(``, `_${store} • Sistem Kasir_`);
+    return L.join("\n");
+  };
+
+  // Batasi panjang supaya link WhatsApp tidak terpotong
+  const LIMIT = 6500;
+  let text = compose(true, sorted.length);
+  if(encodeURIComponent(text).length > LIMIT) text = compose(false, sorted.length);
+  let n = sorted.length;
+  while(encodeURIComponent(text).length > LIMIT && n > 5){ n = Math.floor(n*0.8); text = compose(false, n); }
+
   window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
+}
+
+// Kirim laporan sesuai rentang tanggal di halaman Laporan
+function shareLaporanWA(){
+  shareRingkasanWA(document.getElementById("lapFrom").value, document.getElementById("lapTo").value);
 }
 
 /* =========================================================
