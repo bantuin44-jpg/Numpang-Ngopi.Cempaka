@@ -2472,34 +2472,83 @@ function shareRingkasanWA(fromArg, toArg){
   const store = settings.storeName || "Numpang Ngopi Cempaka";
   const fmtD = s => new Date(s+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const periode = from===to ? fmtD(from) : fmtD(from)+" s/d "+fmtD(to);
+  const pct = (a,b)=> b>0 ? (a/b*100).toFixed(1).replace(".",",")+"%" : "0%";
 
   const all   = Object.values(allTransactions||{}).filter(t=>t.date>=from && t.date<=to);
   const valid = all.filter(t=>t.status!=="void");
+  const voidList = all.filter(t=>t.status==="void");
   const paid  = valid.filter(isLunas);
-  const voids = all.length - valid.length;
+  const voids = voidList.length;
   if(valid.length===0){ toast("Belum ada transaksi pada periode ini.", "err"); return; }
 
+  const sumQty = t => (t.items||[]).reduce((a,i)=>a+i.qty,0);
   const total   = paid.reduce((s,t)=>s+t.total,0);
   const avg     = paid.length ? total/paid.length : 0;
-  const itemsSold = valid.reduce((s,t)=>s+(t.items||[]).reduce((a,i)=>a+i.qty,0),0);
+  const itemsSold = valid.reduce((s,t)=>s+sumQty(t),0);
   const unpaid  = valid.filter(t=>t.payMethod==="Tagihan" && !t.lunas);
   const piutang = unpaid.reduce((s,t)=>s+t.total,0);
   const disc    = valid.reduce((s,t)=>s+(t.discount||0),0);
+  const gross   = valid.reduce((s,t)=>s+(t.subtotal||t.total),0);
+  const omzetAll = valid.reduce((s,t)=>s+t.total,0);
+  const voidTot = voidList.reduce((s,t)=>s+(t.total||0),0);
+  const lunasTagihan = valid.filter(t=>t.payMethod==="Tagihan" && t.lunas===true);
+  const lunasTagihanTot = lunasTagihan.reduce((s,t)=>s+t.total,0);
 
-  // Dine In vs Takeaway
-  const dine = paid.filter(t=>t.orderType==="Dine In");
-  const take = paid.filter(t=>t.orderType!=="Dine In");
-  const dineTot = dine.reduce((s,t)=>s+t.total,0);
-  const takeTot = take.reduce((s,t)=>s+t.total,0);
+  // Jumlah hari dalam periode (untuk rata-rata harian)
+  const days = new Set(valid.map(t=>t.date));
+  const nDays = Math.max(1, Math.round((new Date(to+"T00:00:00")-new Date(from+"T00:00:00"))/86400000)+1);
 
-  // Produk terjual
-  const prodAgg = {};
-  valid.forEach(t=>(t.items||[]).forEach(i=>{
-    if(!prodAgg[i.name]) prodAgg[i.name]={qty:0,total:0};
-    prodAgg[i.name].qty+=i.qty; prodAgg[i.name].total+=i.subtotal;
-  }));
-  const prodLines = Object.entries(prodAgg).sort((a,b)=>b[1].qty-a[1].qty)
-    .map(([n,d],i)=>`${i+1}. ${n} — ${d.qty}x • ${fmtRp(d.total)}`);
+  // Dine In vs Takeaway (transaksi + item)
+  const dine = valid.filter(t=>t.orderType==="Dine In");
+  const take = valid.filter(t=>t.orderType!=="Dine In");
+  const dineTot = dine.reduce((s,t)=>s+t.total,0), takeTot = take.reduce((s,t)=>s+t.total,0);
+  const dineQty = dine.reduce((s,t)=>s+sumQty(t),0), takeQty = take.reduce((s,t)=>s+sumQty(t),0);
+  const mejaSet = new Set(dine.map(t=>t.mejaNo).filter(Boolean));
+
+  // Klasifikasi item: Cup (kategori station "bar" = minuman) vs Makanan/lainnya
+  const catOf = i => { const p = products[i.productId]; return p ? categories[p.category] : null; };
+  const isCup = i => { const c = catOf(i); return !!c && c.station==="bar"; };
+  let cupQty=0, cupTot=0, foodQty=0, foodTot=0, hpp=0, hppKnown=0, hppMissing=0, addonQty=0, addonTot=0;
+  const prodAgg = {}, catAgg = {}, modAgg = {}, hourAgg = {}, cupAgg = {}, foodAgg = {};
+  valid.forEach(t=>{
+    const h = new Date(t.timestamp).getHours();
+    if(!hourAgg[h]) hourAgg[h] = {trx:0, qty:0, tot:0};
+    hourAgg[h].trx++; hourAgg[h].tot += t.total;
+    (t.items||[]).forEach(i=>{
+      const cup = isCup(i);
+      hourAgg[h].qty += i.qty;
+      if(cup){ cupQty+=i.qty; cupTot+=i.subtotal; } else { foodQty+=i.qty; foodTot+=i.subtotal; }
+      if(!prodAgg[i.name]) prodAgg[i.name]={qty:0,total:0};
+      prodAgg[i.name].qty+=i.qty; prodAgg[i.name].total+=i.subtotal;
+      const bucket = cup ? cupAgg : foodAgg;
+      if(!bucket[i.name]) bucket[i.name]={qty:0,total:0};
+      bucket[i.name].qty+=i.qty; bucket[i.name].total+=i.subtotal;
+      const c = catOf(i); const cn = c ? c.name : "Tanpa Kategori";
+      if(!catAgg[cn]) catAgg[cn]={qty:0,total:0,icon:(c&&c.icon)||"•"};
+      catAgg[cn].qty+=i.qty; catAgg[cn].total+=i.subtotal;
+      (i.modifiers||[]).forEach(m=>{
+        const mn = m.name; if(!modAgg[mn]) modAgg[mn]={qty:0,total:0};
+        modAgg[mn].qty+=i.qty; modAgg[mn].total+=(m.price||0)*i.qty;
+        addonQty+=i.qty; addonTot+=(m.price||0)*i.qty;
+      });
+      const p = products[i.productId];
+      if(p && typeof p.cost==="number" && p.cost>0){ hpp += p.cost*i.qty; hppKnown += i.subtotal; } else { hppMissing += i.qty; }
+    });
+  });
+  const rank = obj => Object.entries(obj).sort((a,b)=>b[1].qty-a[1].qty || b[1].total-a[1].total);
+  const medal = i => i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`;
+  const prodLines = rank(prodAgg).map(([n,d],i)=>`${i+1}. ${n} — ${d.qty}x • ${fmtRp(d.total)}`);
+  const cupRank = rank(cupAgg), foodRank = rank(foodAgg);
+  const catLines = Object.entries(catAgg).sort((a,b)=>b[1].total-a[1].total)
+    .map(([n,d])=>`• ${d.icon} ${n}: ${d.qty} item • ${fmtRp(d.total)} (${pct(d.total,gross)})`);
+  const modLines = rank(modAgg).map(([n,d])=>`• ${n}: ${d.qty}x${d.total>0?" • "+fmtRp(d.total):""}`);
+
+  // Jam tersibuk
+  const hourEntries = Object.entries(hourAgg).sort((a,b)=>b[1].trx-a[1].trx);
+  const hh = h => String(h).padStart(2,"0")+".00";
+  const hourLines = Object.entries(hourAgg).sort((a,b)=>Number(a[0])-Number(b[0]))
+    .map(([h,d])=>`• ${hh(h)}–${hh((Number(h)+1)%24)}: ${d.trx} trx • ${d.qty} item • ${fmtRp(d.tot)}`);
+  const peak = hourEntries[0];
 
   // Rekap pembayaran
   const payAgg = {};
@@ -2508,19 +2557,38 @@ function shareRingkasanWA(fromArg, toArg){
     if(!payAgg[m]) payAgg[m]={c:0,t:0}; payAgg[m].c++; payAgg[m].t+=t.total;
   });
   const payLines = Object.entries(payAgg).sort((a,b)=>b[1].t-a[1].t)
-    .map(([n,d])=>`• ${n}: ${d.c} trx • ${fmtRp(d.t)}`);
+    .map(([n,d])=>`• ${n}: ${d.c} trx • ${fmtRp(d.t)} (${pct(d.t,total)})`);
 
-  // Per kasir
+  // Per kasir (trx, item, cup, omzet)
   const kasAgg = {};
-  paid.forEach(t=>{ const k=t.kasirName||"-"; if(!kasAgg[k]) kasAgg[k]={c:0,t:0}; kasAgg[k].c++; kasAgg[k].t+=t.total; });
+  paid.forEach(t=>{
+    const k=t.kasirName||"-"; if(!kasAgg[k]) kasAgg[k]={c:0,t:0,q:0,cup:0};
+    kasAgg[k].c++; kasAgg[k].t+=t.total; kasAgg[k].q+=sumQty(t);
+    kasAgg[k].cup+=(t.items||[]).filter(isCup).reduce((a,i)=>a+i.qty,0);
+  });
   const kasLines = Object.entries(kasAgg).sort((a,b)=>b[1].t-a[1].t)
-    .map(([n,d])=>`• ${n}: ${d.c} trx • ${fmtRp(d.t)}`);
+    .map(([n,d])=>`• ${n}: ${d.c} trx • ${d.cup} cup • ${d.q} item • ${fmtRp(d.t)}`);
 
   // Piutang per nama
   const piutAgg = {};
   unpaid.forEach(t=>{ const n=(t.tagihanName||"(Tanpa Nama)").trim(); if(!piutAgg[n]) piutAgg[n]={c:0,t:0}; piutAgg[n].c++; piutAgg[n].t+=t.total; });
   const piutLines = Object.entries(piutAgg).sort((a,b)=>b[1].t-a[1].t)
     .map(([n,d])=>`• ${n}: ${d.c} tagihan • ${fmtRp(d.t)}`);
+
+  // Rekap per hari (kalau periode > 1 hari)
+  let dayLines = [];
+  if(from!==to){
+    const dAgg = {};
+    valid.forEach(t=>{ if(!dAgg[t.date]) dAgg[t.date]={c:0,t:0,q:0,cup:0};
+      dAgg[t.date].c++; if(isLunas(t)) dAgg[t.date].t+=t.total; dAgg[t.date].q+=sumQty(t);
+      dAgg[t.date].cup+=(t.items||[]).filter(isCup).reduce((a,i)=>a+i.qty,0); });
+    dayLines = Object.entries(dAgg).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,v])=>{
+      const dn = new Date(d+"T00:00:00").toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"});
+      return `• ${dn}: ${v.c} trx • ${v.cup} cup • ${fmtRp(v.t)}`; });
+  }
+
+  // Void
+  const voidLines = voidList.map(t=>`• ${t.trxNo||"-"} • ${fmtRp(t.total||0)} • ${itemsSummary(t.items)}`);
 
   // Daftar transaksi
   const sorted = [...valid].sort((a,b)=>a.timestamp-b.timestamp);
@@ -2530,50 +2598,105 @@ function shareRingkasanWA(fromArg, toArg){
     const st = t.payMethod==="Tagihan" ? (t.lunas ? "Lunas" : "BELUM LUNAS") : t.payMethod;
     const tgl = from===to ? "" : t.date.slice(5)+" ";
     let s = `${i+1}. ${tgl}${jam} • ${jenis} • ${fmtRp(t.total)} • ${st}${t.tagihanName?" ("+t.tagihanName+")":""}`;
-    if(withItems) s += `\n    _${itemsSummary(t.items)}_`;
+    if(withItems) s += `\n    _${(t.items||[]).map(it=>it.name+" x"+it.qty+((it.modifiers&&it.modifiers.length)?" (+"+it.modifiers.map(m=>m.name).join(", ")+")":"")).join(", ")||"-"}_`;
     return s;
   };
 
-  const compose = (withItems, maxTrx)=>{
+  const bar = `━━━━━━━━━━━━`;
+  const head = t => [``, t, bar];
+
+  // level: 3 = lengkap, 2 = tanpa daftar transaksi per jam & void detail, 1 = ringkas inti
+  const compose = (level, withItems, maxTrx)=>{
     const shown = sorted.slice(0, maxTrx);
     const L = [];
     L.push(`☕ *${store.toUpperCase()}*`);
-    L.push(`📋 *LAPORAN PENJUALAN*`);
+    L.push(`📋 *LAPORAN PENJUALAN DETAIL*`);
     L.push(`🗓 ${periode}`);
     L.push(`🕒 Dikirim ${new Date().toLocaleString("id-ID")}`);
-    L.push(``, `━━━━━━━━━━━━━━━━━━`, `📊 *RINGKASAN*`, `━━━━━━━━━━━━━━━━━━`);
+
+    L.push(...head(`📊 *RINGKASAN*`));
     L.push(`💰 Total Penjualan (Lunas): *${fmtRp(total)}*`);
     L.push(`🧾 Jumlah Transaksi: *${valid.length}*`);
-    L.push(`📈 Rata-rata / Struk: *${fmtRp(avg)}*`);
-    L.push(`📦 Item Terjual: *${itemsSold}*`);
+    L.push(`☕ *Total Cup Terjual: ${cupQty} cup* (${fmtRp(cupTot)})`);
+    L.push(`🍽 Makanan/Lainnya: *${foodQty} item* (${fmtRp(foodTot)})`);
+    L.push(`📦 Total Item Terjual: *${itemsSold}*`);
+    L.push(`📈 Rata-rata / Struk: *${fmtRp(avg)}* • ${(itemsSold/valid.length).toFixed(1).replace(".",",")} item/struk`);
+    if(from!==to) L.push(`📅 Rata-rata / Hari: ${fmtRp(total/nDays)} • ${(cupQty/nDays).toFixed(1).replace(".",",")} cup/hari (${days.size} hari ada transaksi)`);
+    if(gross!==omzetAll || disc>0) L.push(`🧮 Penjualan Kotor: ${fmtRp(gross)}`);
+    if(disc>0) L.push(`🏷 Total Diskon: ${fmtRp(disc)} (${pct(disc,gross)} dari kotor)`);
     L.push(`📒 Piutang Belum Lunas: *${fmtRp(piutang)}* (${unpaid.length} tagihan)`);
-    if(disc>0) L.push(`🏷 Total Diskon: ${fmtRp(disc)}`);
-    if(voids>0) L.push(`🚫 Transaksi Void: ${voids}`);
-    L.push(``, `🍽 *Dine In vs Takeaway*`);
-    L.push(`• Dine In: ${dine.length} trx • ${fmtRp(dineTot)}`);
-    L.push(`• Takeaway: ${take.length} trx • ${fmtRp(takeTot)}`);
-    L.push(``, `━━━━━━━━━━━━━━━━━━`, `🛒 *PRODUK TERJUAL*`, `━━━━━━━━━━━━━━━━━━`);
-    L.push(...(prodLines.length?prodLines:["-"]));
-    L.push(``, `━━━━━━━━━━━━━━━━━━`, `💳 *REKAP PEMBAYARAN*`, `_(sudah masuk pemasukan)_`, `━━━━━━━━━━━━━━━━━━`);
+    if(lunasTagihan.length) L.push(`✅ Tagihan Sudah Dilunasi: ${lunasTagihan.length} • ${fmtRp(lunasTagihanTot)}`);
+    if(voids>0) L.push(`🚫 Transaksi Void: ${voids} • ${fmtRp(voidTot)}`);
+    if(hppKnown>0){
+      const laba = hppKnown - hpp;
+      L.push(`📉 Estimasi HPP: ${fmtRp(hpp)} • Laba Kotor Est.: *${fmtRp(laba)}* (margin ${pct(laba,hppKnown)})`);
+      if(hppMissing>0) L.push(`   _⚠ ${hppMissing} item belum punya data HPP, tidak masuk hitungan_`);
+    }
+    if(peak) L.push(`⏰ Jam Tersibuk: *${hh(peak[0])}–${hh((Number(peak[0])+1)%24)}* (${peak[1].trx} trx • ${peak[1].qty} item)`);
+    if(cupRank[0]) L.push(`🏆 Cup Terlaris: *${cupRank[0][0]}* (${cupRank[0][1].qty} cup)`);
+    if(foodRank[0]) L.push(`🍟 Makanan Terlaris: *${foodRank[0][0]}* (${foodRank[0][1].qty}x)`);
+
+    L.push(...head(`🍽 *DINE IN vs TAKEAWAY*`));
+    L.push(`• Dine In: ${dine.length} trx • ${dineQty} item • ${fmtRp(dineTot)} (${pct(dineTot,omzetAll)})${mejaSet.size?` • ${mejaSet.size} meja terpakai`:""}`);
+    L.push(`• Takeaway: ${take.length} trx • ${takeQty} item • ${fmtRp(takeTot)} (${pct(takeTot,omzetAll)})`);
+
+    if(dayLines.length) L.push(...head(`📅 *REKAP PER HARI*`), ...dayLines);
+
+    L.push(...head(`🗂 *PENJUALAN PER KATEGORI*`));
+    L.push(...(catLines.length?catLines:["-"]));
+
+    L.push(...head(`☕ *DETAIL CUP / MINUMAN* (${cupQty} cup)`));
+    L.push(...(cupRank.length ? cupRank.map(([n,d],i)=>`${medal(i)} ${n} — ${d.qty} cup • ${fmtRp(d.total)} (${pct(d.qty,cupQty)})`) : ["-"]));
+
+    if(foodRank.length){
+      L.push(...head(`🍟 *DETAIL MAKANAN/LAINNYA* (${foodQty} item)`));
+      L.push(...foodRank.map(([n,d],i)=>`${medal(i)} ${n} — ${d.qty}x • ${fmtRp(d.total)} (${pct(d.qty,foodQty)})`));
+    }
+
+    if(modLines.length){
+      L.push(...head(`➕ *ADD-ON / MODIFIER*`), `_Total ${addonQty} add-on terjual • ${fmtRp(addonTot)}_`, ...modLines);
+    }
+
+    if(level>=2 && hourLines.length){
+      L.push(...head(`⏰ *PENJUALAN PER JAM*`), ...hourLines);
+    }
+
+    L.push(...head(`💳 *REKAP PEMBAYARAN*`), `_(sudah masuk pemasukan)_`);
     L.push(...(payLines.length?payLines:["-"]));
     L.push(``, `👤 *Per Kasir*`, ...(kasLines.length?kasLines:["-"]));
-    if(piutLines.length){
-      L.push(``, `━━━━━━━━━━━━━━━━━━`, `📒 *PIUTANG BELUM LUNAS*`, `━━━━━━━━━━━━━━━━━━`, ...piutLines);
+
+    if(piutLines.length) L.push(...head(`📒 *PIUTANG BELUM LUNAS*`), ...piutLines);
+    if(level>=2 && voidLines.length) L.push(...head(`🚫 *DETAIL VOID*`), ...voidLines);
+
+    if(level>=2 && maxTrx>0){
+      L.push(...head(`🧾 *DAFTAR TRANSAKSI*`));
+      L.push(...shown.map((t,i)=>trxLine(t,i,withItems)));
+      if(shown.length < sorted.length) L.push(`_... +${sorted.length-shown.length} transaksi lagi, lihat selengkapnya di PDF_`);
     }
-    L.push(``, `━━━━━━━━━━━━━━━━━━`, `🧾 *DAFTAR TRANSAKSI*`, `━━━━━━━━━━━━━━━━━━`);
-    L.push(...shown.map((t,i)=>trxLine(t,i,withItems)));
-    if(shown.length < sorted.length) L.push(`_... +${sorted.length-shown.length} transaksi lagi, lihat selengkapnya di PDF_`);
     L.push(``, `_${store} • Sistem Kasir_`);
     return L.join("\n");
   };
 
-  // Batasi panjang supaya link WhatsApp tidak terpotong
-  const LIMIT = 6500;
-  let text = compose(true, sorted.length);
-  if(encodeURIComponent(text).length > LIMIT) text = compose(false, sorted.length);
+  // Teks lengkap selalu disalin ke clipboard (jaga-jaga link WA terpotong),
+  // lalu dikirim versi terpanjang yang masih muat di link wa.me
+  const LIMIT = 7500;
+  const fullText = compose(2, true, sorted.length);
+  let text = fullText;
+  const tryCompose = (lvl, wi, n)=>{ text = compose(lvl, wi, n); return encodeURIComponent(text).length <= LIMIT; };
+  let fits = encodeURIComponent(text).length <= LIMIT;
+  if(!fits) fits = tryCompose(2, false, sorted.length);
   let n = sorted.length;
-  while(encodeURIComponent(text).length > LIMIT && n > 5){ n = Math.floor(n*0.8); text = compose(false, n); }
+  while(!fits && n > 5){ n = Math.floor(n*0.7); fits = tryCompose(2, false, n); }
+  if(!fits) fits = tryCompose(2, false, 0);
+  if(!fits) tryCompose(1, false, 0);
 
+  const truncated = text !== fullText;
+  if(truncated && navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(fullText).then(
+      ()=>toast("Laporan sangat panjang. Versi LENGKAP sudah disalin — tempel (paste) di chat WA jika perlu.", "ok"),
+      ()=>{}
+    );
+  }
   window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
 }
 
