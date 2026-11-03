@@ -545,6 +545,12 @@ tr:hover td{background:rgba(244,234,216,.02);}
           <button class="qBtn q6" onclick="shareRingkasanWA()"><span class="qi">💬</span>Kirim Ringkasan WA</button>
         </div>
         <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc2"><div class="ic">☕</div><div class="lbl">Cup Terjual Hari Ini</div><div class="val" id="dashCup">0</div><div class="sub" id="dashCupSub">-</div><span class="trendPill" id="dashCupTrend">-</span></div>
+          <div class="card statCard sc-color sc6"><div class="ic">📆</div><div class="lbl">Cup 7 Hari Terakhir</div><div class="val" id="dashCupWeek">0</div><div class="sub" id="dashCupWeekSub">-</div></div>
+          <div class="card statCard sc-color sc5"><div class="ic">🗓</div><div class="lbl">Cup Bulan Ini</div><div class="val" id="dashCupMonth">0</div><div class="sub" id="dashCupMonthSub">-</div></div>
+          <div class="card statCard sc-color sc7"><div class="ic">🥤</div><div class="lbl">Cup Terlaris Hari Ini</div><div class="val" id="dashCupTop" style="font-size:16px;">-</div><div class="sub" id="dashCupTopSub">-</div></div>
+        </div>
+        <div class="grid g4" style="margin-bottom:16px;">
           <div class="card statCard sc-color sc1"><div class="ic">💰</div><div class="lbl">Penjualan Hari Ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div><span class="trendPill" id="dashSalesTrend">-</span></div>
           <div class="card statCard sc-color sc2"><div class="ic">🧾</div><div class="lbl">Jumlah Transaksi</div><div class="val" id="dashTrx">0</div><div class="sub">Hari ini</div></div>
           <div class="card statCard sc-color sc3"><div class="ic">⭐</div><div class="lbl">Produk Terlaris</div><div class="val" id="dashTop" style="font-size:16px;">-</div><div class="sub" id="dashTopSub">-</div></div>
@@ -899,6 +905,18 @@ function catIsDrink(c){
   if(c.station==="bar") return true;
   return DRINK_RX.test(c.name||"") && !FOOD_RX.test(c.name||"");
 }
+// Item transaksi = CUP (minuman)? Dipakai dashboard: kategori produk > nama item
+function isCupItem(i){
+  const p = products[i.productId];
+  const c = p ? categories[p.category] : null;
+  if(c){
+    if(c.kind==="minuman") return true;
+    if(c.kind==="makanan") return false;
+    if(catIsDrink(c)) return true;
+    if(FOOD_RX.test(c.name||"")) return false;
+  }
+  return DRINK_RX.test(i.name||"") && !FOOD_RX.test(i.name||"");
+}
 function fmtRp(n){ n = Math.round(n||0); return "Rp" + n.toLocaleString("id-ID"); }
 
 /* =========================================================
@@ -1121,8 +1139,8 @@ function onFirebaseErr(label){
   };
 }
 function bindListeners(){
-  db.ref("categories").on("value", snap=>{ categories = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderKategoriTable(); buildCatTabs(); }, onFirebaseErr("kategori"));
-  db.ref("products").on("value", snap=>{ products = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderProdukTable(); if(currentView==="stok"){renderStokTable();} }, onFirebaseErr("produk"));
+  db.ref("categories").on("value", snap=>{ categories = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderKategoriTable(); buildCatTabs(); if(currentView==="dashboard") renderDashboard(); }, onFirebaseErr("kategori"));
+  db.ref("products").on("value", snap=>{ products = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderProdukTable(); if(currentView==="stok"){renderStokTable();} if(currentView==="dashboard") renderDashboard(); }, onFirebaseErr("produk"));
   db.ref("users").on("value", snap=>{ users = snap.val()||{}; if(currentView==="users") renderUsersTable(); }, onFirebaseErr("pengguna"));
   db.ref("transactions").on("value", snap=>{ allTransactions = snap.val()||{}; if(currentView==="riwayat") renderRiwayat(); if(currentView==="dashboard") renderDashboard(); if(currentView==="laporan") runLaporan(); if(currentView==="piutang") renderPiutangList(); }, onFirebaseErr("transaksi"));
   db.ref("active_tables").on("value", snap=>{ activeTables = snap.val()||{}; if(currentView==="pos" && orderType==="Dine In") buildMejaGrid(); }, onFirebaseErr("status meja"));
@@ -1852,12 +1870,38 @@ function renderDashboard(){
   setTxt("dashYesterday", fmtRp(ySales));
   setTxt("dashYesterdaySub", yCount+" transaksi kemarin");
 
+  // ---- CUP terjual (item minuman, transaksi tidak void) ----
+  const cupQtyOf = list => list.reduce((s,t)=>s+(t.items||[]).reduce((a,i)=>a+(isCupItem(i)?i.qty:0),0),0);
+  const cupToday = cupQtyOf(todayTrx);
+  const cupYesterday = cupQtyOf(allTrx.filter(t=>t.date===ydKey));
+  const cupWeek = cupQtyOf(allTrx.filter(t=>dayKeys.includes(t.date)));
+  const monthKey = today.slice(0,7);
+  const cupMonth = cupQtyOf(allTrx.filter(t=>(t.date||"").slice(0,7)===monthKey));
+  const itemsToday = todayTrx.reduce((s,t)=>s+(t.items||[]).reduce((a,i)=>a+i.qty,0),0);
+  const cupNameAgg = {};
+  todayTrx.forEach(t=>(t.items||[]).forEach(i=>{ if(isCupItem(i)) cupNameAgg[i.name]=(cupNameAgg[i.name]||0)+i.qty; }));
+  const cupTop = Object.entries(cupNameAgg).sort((a,b)=>b[1]-a[1])[0];
+  const fmtN = n => Number(n||0).toLocaleString("id-ID");
+  const avg1 = n => n.toFixed(1).replace(".",",");
+  setTxt("dashCup", fmtN(cupToday));
+  setTxt("dashCupSub", cupToday>0 ? "dari "+fmtN(itemsToday)+" item terjual" : "Belum ada cup terjual");
+  let cupTrend = "Belum ada pembanding kemarin", cupTrendCls = "";
+  if(cupYesterday>0){ const d=cupToday-cupYesterday; cupTrend=(d>=0?"▲ ":"▼ ")+Math.abs(d)+" cup vs kemarin ("+cupYesterday+")"; cupTrendCls=d>=0?"":"down"; }
+  else if(cupToday>0){ cupTrend="▲ Kemarin belum ada cup"; }
+  const cEl = document.getElementById("dashCupTrend"); if(cEl){ cEl.textContent=cupTrend; cEl.className="trendPill "+cupTrendCls; }
+  setTxt("dashCupWeek", fmtN(cupWeek));
+  setTxt("dashCupWeekSub", "Rata-rata "+avg1(cupWeek/7)+" cup/hari");
+  setTxt("dashCupMonth", fmtN(cupMonth));
+  setTxt("dashCupMonthSub", "Rata-rata "+avg1(cupMonth/new Date().getDate())+" cup/hari");
+  setTxt("dashCupTop", cupTop ? cupTop[0] : "-");
+  setTxt("dashCupTopSub", cupTop ? cupTop[1]+" cup terjual hari ini" : "Belum ada data");
+
   const hr = new Date().getHours();
   const sapa = hr<11 ? "Selamat pagi" : hr<15 ? "Selamat siang" : hr<18 ? "Selamat sore" : "Selamat malam";
   setTxt("heroHi", sapa+", "+((currentUser&&currentUser.name)||"Owner")+"! ☕");
   setTxt("heroDate", new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"}));
-  setTxt("heroMsg", totalSales>0 ? "Hari ini sudah masuk "+fmtRp(totalSales)+" dari "+todayPaidTrx.length+" transaksi lunas." : "Belum ada penjualan lunas hari ini. Semangat buka toko!");
-  dashSnap = { totalSales, trx:todayTrx.length, avg: todayPaidTrx.length ? totalSales/todayPaidTrx.length : 0, top:topEntry, piutang:piutangTotal, piutangN:todayUnpaid.length, peakH, trend:trendTxt };
+  setTxt("heroMsg", totalSales>0 ? "Hari ini sudah masuk "+fmtRp(totalSales)+" dari "+todayPaidTrx.length+" transaksi lunas · ☕ "+fmtN(cupToday)+" cup terjual." : "Belum ada penjualan lunas hari ini. Semangat buka toko!");
+  dashSnap = { cup:cupToday, totalSales, trx:todayTrx.length, avg: todayPaidTrx.length ? totalSales/todayPaidTrx.length : 0, top:topEntry, piutang:piutangTotal, piutangN:todayUnpaid.length, peakH, trend:trendTxt };
 
   if(typeof Chart === "undefined") return; // library grafik belum siap
   const PAL = ["#2563eb","#059669","#d97706","#e11d48","#7c3aed","#0891b2","#db2777","#4f46e5"];
