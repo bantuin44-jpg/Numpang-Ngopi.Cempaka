@@ -570,6 +570,11 @@ tr:hover td{background:rgba(244,234,216,.02);}
           <div class="card cc cc-teal"><h3 style="margin-top:0;font-family:var(--font-display);">⏰ Penjualan per Jam (Hari Ini)</h3><div class="chartBox"><canvas id="chartHourly"></canvas></div></div>
           <div class="card cc cc-amber"><h3 style="margin-top:0;font-family:var(--font-display);">⭐ Produk Terlaris (7 Hari)</h3><div class="chartBox"><canvas id="chartTopProduct"></canvas></div></div>
         </div>
+        <div class="card cc cc-blue" style="margin-top:16px;">
+          <h3 style="margin-top:0;font-family:var(--font-display);">📉 Tren Penjualan Sejak Awal Rilis</h3>
+          <div id="trendSummary" style="margin:-4px 0 10px;font-size:12.5px;font-weight:700;"></div>
+          <div class="chartBox" style="height:300px;"><canvas id="chartTrend"></canvas></div>
+        </div>
       </div>
 
       <!-- ===== POS ===== -->
@@ -888,7 +893,7 @@ let currentView = "dashboard";
 let menuTab = "produk", stokTab = "stok", lapTab = "penjualan";
 let editingProdId = null, editingCatId = null, editingUserId = null;
 let lastTrxData = null;
-let chartWeekly = null, chartPayment = null, chartTopProduct = null, chartHourly = null;
+let chartWeekly = null, chartPayment = null, chartTopProduct = null, chartHourly = null, chartTrend = null;
 let dashSnap = {};
 
 const PAY_METHODS = ["Cash","QRIS","Tagihan"];
@@ -1977,6 +1982,61 @@ function renderDashboard(){
   if(ctx3){
     if(chartTopProduct) chartTopProduct.destroy();
     chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor: topProds.map((_,i)=>PAL[i%PAL.length]), borderRadius:6 }]}, options: { ...chartOpts(false), indexAxis:"y" } });
+  }
+
+  // ---- Tren penjualan sejak awal rilis (otomatis ikut update tiap ada transaksi) ----
+  const ctxT = document.getElementById("chartTrend");
+  if(ctxT){
+    if(chartTrend) chartTrend.destroy();
+    const ymdT = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const dailySales = {};
+    allTrx.forEach(t=>{ if(t.date && isLunas(t)) dailySales[t.date]=(dailySales[t.date]||0)+(t.total||0); });
+    const firstDate = allTrx.map(t=>t.date).filter(Boolean).sort()[0];
+    const sumEl = document.getElementById("trendSummary");
+    if(!firstDate){
+      if(sumEl){ sumEl.style.color = dimTxt; sumEl.textContent = "Belum ada transaksi."; }
+    } else {
+      const keys = [];
+      const endD = new Date(today+"T00:00:00");
+      for(let d=new Date(firstDate+"T00:00:00"); d<=endD; d.setDate(d.getDate()+1)) keys.push(ymdT(d));
+      const vals = keys.map(k=>dailySales[k]||0);
+      const n = vals.length;
+      // rata-rata bergerak 7 hari
+      const ma = vals.map((_,i)=>{ const a=Math.max(0,i-6); const seg=vals.slice(a,i+1); return Math.round(seg.reduce((x,y)=>x+y,0)/seg.length); });
+      // garis tren linear (regresi)
+      let slope=0, icpt=vals[0]||0;
+      if(n>1){
+        const mx=(n-1)/2, my=vals.reduce((x,y)=>x+y,0)/n;
+        let num=0, den=0; vals.forEach((v,i)=>{ num+=(i-mx)*(v-my); den+=(i-mx)*(i-mx); });
+        slope = den ? num/den : 0; icpt = my - slope*mx;
+      }
+      const trendLine = vals.map((_,i)=>Math.round(icpt+slope*i));
+      const total = vals.reduce((x,y)=>x+y,0);
+      const activeDays = vals.filter(v=>v>0).length;
+      let bestI = 0; vals.forEach((v,i)=>{ if(v>vals[bestI]) bestI=i; });
+      const lbl = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{day:"numeric",month:"short"});
+      const lblFull = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+      if(sumEl){
+        const up = slope>=0;
+        sumEl.style.color = n>1 ? (up ? "#059669" : "#e11d48") : dimTxt;
+        sumEl.textContent = (n>1 ? (up?"▲ Tren naik ":"▼ Tren turun ")+"≈ "+fmtRp(Math.abs(slope))+"/hari · " : "")
+          + "Sejak "+lblFull(keys[0]).replace(/^\S+,\s*/,"")+" ("+n+" hari) · Total "+fmtRp(total)
+          + " · Rata-rata "+fmtRp(activeDays? total/activeDays : 0)+"/hari buka"
+          + (vals[bestI]>0 ? " · Terbaik "+fmtRp(vals[bestI])+" ("+lbl(keys[bestI])+")" : "");
+      }
+      const optsT = chartOpts(true);
+      optsT.plugins.legend = { display:true, labels:{ color:dimTxt, usePointStyle:true, boxWidth:8 } };
+      optsT.interaction = { mode:"index", intersect:false };
+      optsT.plugins.tooltip.callbacks.title = items => items.length ? lblFull(keys[items[0].dataIndex]) : "";
+      optsT.plugins.tooltip.callbacks.label = c => " "+c.dataset.label+": "+fmtRp(c.parsed.y);
+      optsT.scales.x.ticks.maxRotation = 0; optsT.scales.x.ticks.autoSkip = true; optsT.scales.x.ticks.maxTicksLimit = 12;
+      const ptR = n>45 ? 0 : 3;
+      chartTrend = new Chart(ctxT, { type:"line", data:{ labels:keys.map(lbl), datasets:[
+        { label:"Penjualan Harian", data:vals, borderColor:"#93c5fd", backgroundColor:"rgba(37,99,235,.10)", fill:true, borderWidth:1.5, tension:.25, pointRadius:ptR, pointBackgroundColor:"#2563eb" },
+        { label:"Rata-rata 7 Hari", data:ma, borderColor:"#2563eb", borderWidth:3, tension:.35, pointRadius:0 },
+        { label:"Garis Tren", data:trendLine, borderColor:"#e11d48", borderWidth:2, borderDash:[7,5], pointRadius:0, tension:0 }
+      ]}, options: optsT });
+    }
   }
 }
 function chartOpts(money){
