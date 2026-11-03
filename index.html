@@ -7,13 +7,15 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2314100c%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%23c9922e%22>N</text></svg>">
 <link rel="manifest" href="data:application/json,{%22name%22:%22Numpang%20Ngopi%20Cempaka%22,%22short_name%22:%22Ngopi%20Cempaka%22,%22display%22:%22standalone%22,%22start_url%22:%22.%22,%22theme_color%22:%22%2314100c%22,%22background_color%22:%22%2314100c%22}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,800;0,900;1,500&family=IBM+Plex+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,800;0,900;1,500&family=IBM+Plex+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
   /* Default = Mode Berwarna (terang, colorful — seperti dashboard referensi) */
@@ -47,7 +49,7 @@
   --sidebar-text-dim:rgba(253,243,234,.68);
   --sidebar-active-bg:rgba(255,255,255,.16);
   --sidebar-line:rgba(255,255,255,.14);
-  --topbar-bg:rgba(255,255,255,.85);
+  --topbar-bg:rgba(255,255,255,.97);
 
   --sc1-a:#2563eb; --sc1-b:#1d4ed8; /* biru — penjualan */
   --sc2-a:#059669; --sc2-b:#047857; /* hijau — transaksi */
@@ -79,7 +81,7 @@ body.theme-dark{
   --sidebar-text-dim:rgba(244,234,216,.6);
   --sidebar-active-bg:rgba(255,255,255,.08);
   --sidebar-line:rgba(244,234,216,.12);
-  --topbar-bg:rgba(20,16,12,.85);
+  --topbar-bg:rgba(20,16,12,.97);
 }
 body.theme-dark .brandmark{color:var(--accent-2);}
 body.theme-dark .menuCard .photo{background:linear-gradient(135deg,var(--surface-2),var(--surface-3));}
@@ -87,6 +89,12 @@ body.theme-dark .switch .dot{background:var(--cream);}
 body.theme-dark .switch.on .dot{background:#1a1207;}
 
 *{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+button,a,input,select,textarea,.navItem,.menuCard,.qBtn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.menuCard{content-visibility:auto;contain-intrinsic-size:auto 150px;}
+.mainArea{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}
+.menuCard .photo img{width:100%;height:100%;object-fit:cover;display:block;}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important;}}
 html,body{margin:0;padding:0;height:100%;}
 body{
   background:
@@ -116,7 +124,7 @@ a{color:var(--accent-2);}
 
 /* ---------- Login ---------- */
 #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;}
-.steamdot{position:absolute;border-radius:50%;background:rgba(201,146,46,.08);filter:blur(40px);}
+.steamdot{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(201,146,46,.10),transparent 70%);}
 .loginCard{
   width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);
   border-radius:20px;padding:40px 34px 34px;box-shadow:var(--shadow);position:relative;z-index:1;
@@ -136,7 +144,7 @@ a{color:var(--accent-2);}
 .field input:focus,.field select:focus{border-color:var(--accent);}
 .btn{
   border:none;border-radius:10px;padding:12px 18px;font-weight:600;font-size:14px;
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s, filter .15s;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s;
 }
 .btn:active{transform:scale(.98);}
 .btn-primary{background:var(--accent);color:#1a1207;width:100%;padding:13px;font-size:14.5px;}
@@ -186,7 +194,7 @@ a{color:var(--accent-2);}
 .mainArea{flex:1;min-width:0;height:100vh;overflow-y:auto;}
 .topbar{
   position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
-  padding:16px 26px;background:var(--topbar-bg);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  padding:16px 26px;background:var(--topbar-bg);border-bottom:1px solid var(--line);
 }
 .topbar h1{font-family:var(--font-display);font-size:21px;font-weight:700;margin:0;}
 .topbar .sub{font-size:12px;color:var(--cream-faint);margin-top:2px;}
@@ -236,9 +244,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .dapurStatusChip .dot{width:9px;height:9px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px var(--success-bg);}
 .kdsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
 .kdsCard{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);transition:border-color .2s;}
-.kdsCard.new{border-color:var(--danger);animation:kdsPulse 1.1s ease-in-out infinite;}
+.kdsCard.new{border-color:var(--danger);position:relative;}
+.kdsCard.new::after{content:"";position:absolute;inset:-2px;border-radius:18px;box-shadow:0 0 0 7px rgba(225,29,72,.35);pointer-events:none;animation:kdsPulse 1.1s ease-in-out infinite;will-change:opacity;}
 .kdsCard.proses{border-color:var(--accent);}
-@keyframes kdsPulse{0%,100%{box-shadow:0 0 0 0 rgba(225,29,72,.35);}50%{box-shadow:0 0 0 10px rgba(225,29,72,0);}}
+@keyframes kdsPulse{0%,100%{opacity:0;}50%{opacity:1;}}
 .kdsHead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
 .kdsMeja{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--cream);}
 .kdsTrx{font-family:var(--font-mono);font-size:11px;color:var(--cream-faint);}
@@ -255,17 +264,17 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .kdsEmpty .ic{font-size:48px;margin-bottom:12px;}
 .belFloatBtn{position:fixed;right:26px;bottom:26px;z-index:40;width:60px;height:60px;border-radius:50%;background:var(--danger);color:#fff;border:none;font-size:24px;box-shadow:0 8px 22px rgba(225,29,72,.4);display:flex;align-items:center;justify-content:center;}
 .belFloatBtn:active{transform:scale(.94);}
-.belFlash{animation:belFlashAnim 1s ease-in-out infinite;}
-@keyframes belFlashAnim{0%,100%{background:var(--bg);}50%{background:rgba(225,29,72,.18);}}
+.belFlash::before{content:"";position:fixed;inset:0;z-index:9990;pointer-events:none;background:rgba(225,29,72,.18);animation:belFlashAnim 1s ease-in-out infinite;will-change:opacity;}
+@keyframes belFlashAnim{0%,100%{opacity:0;}50%{opacity:1;}}
 
 /* ===== RADIO (voice channel) ===== */
 .radioFloatBtn{position:fixed;right:96px;bottom:26px;z-index:40;width:60px;height:60px;border-radius:50%;background:var(--surface);color:var(--cream);border:1px solid var(--line-strong);font-size:22px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .15s;}
 .radioFloatBtn:active{transform:scale(.94);}
 .radioFloatBtn.on{background:var(--success);color:#fff;border-color:var(--success);box-shadow:0 8px 22px rgba(22,163,74,.4);}
-.radioFloatBtn.on.speaking{animation:radioSpeakPulse 1s ease-in-out infinite;}
+.radioFloatBtn.on.speaking::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 8px rgba(22,163,74,.25);pointer-events:none;animation:radioSpeakPulse 1s ease-in-out infinite;will-change:opacity;}
 .radioFloatBtn .radioDot{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--cream-faint);border:2px solid var(--surface);}
 .radioFloatBtn.on .radioDot{background:#fff;}
-@keyframes radioSpeakPulse{0%,100%{box-shadow:0 8px 22px rgba(22,163,74,.4);}50%{box-shadow:0 8px 30px rgba(22,163,74,.8),0 0 0 8px rgba(22,163,74,.15);}}
+@keyframes radioSpeakPulse{0%,100%{opacity:0;}50%{opacity:1;}}
 .radioPanel{position:fixed;right:26px;bottom:96px;z-index:41;width:270px;max-width:calc(100vw - 40px);background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow);padding:14px;font-family:var(--font-ui);}
 .radioPanel.hidden{display:none;}
 .radioPanel h4{margin:0 0 4px;font-family:var(--font-display);font-size:15px;color:var(--cream);display:flex;align-items:center;gap:6px;}
@@ -335,7 +344,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .mejaLegend .dot-occ{background:rgba(225,29,72,.6);border:1px solid rgba(225,29,72,.8);}
 
 /* Modal */
-.modalOverlay{position:fixed;inset:0;background:rgba(10,7,4,.65);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.modalOverlay{position:fixed;inset:0;background:rgba(10,7,4,.7);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
 .modal{background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow);}
 .modal.wide{max-width:640px;}
 .modalHead{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line);}
@@ -389,8 +398,8 @@ tr:hover td{background:rgba(244,234,216,.02);}
   .g3{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:760px){
-  .sidebar{position:fixed;left:-260px;top:0;z-index:100;transition:left .2s;box-shadow:var(--shadow);}
-  .sidebar.open{left:0;}
+  .sidebar{position:fixed;left:0;top:0;z-index:100;transform:translate3d(-105%,0,0);transition:transform .2s;will-change:transform;box-shadow:var(--shadow);}
+  .sidebar.open{transform:translate3d(0,0,0);}
   .mainArea{width:100%;}
   .mobileTopBtn{display:flex;}
   .g2,.g4,.g3{grid-template-columns:1fr 1fr;}
@@ -399,6 +408,10 @@ tr:hover td{background:rgba(244,234,216,.02);}
   .topbar{padding:14px 16px;}
   .sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
   .sidebarOverlay.show{display:block;}
+  :root,body.theme-dark{--shadow:0 2px 8px rgba(30,36,51,.12);}
+  .qBtn{box-shadow:0 4px 10px -6px rgba(0,0,0,.35);}
+  .heroBanner{box-shadow:none;}
+  .mainArea{height:100vh;height:100dvh;}
 }
 /* ===== Dashboard berwarna ===== */
 .heroBanner{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:22px 26px;border-radius:18px;margin-bottom:16px;color:#fff;background:linear-gradient(120deg,#7c2d12 0%,#c2410c 40%,#e08a1e 100%);box-shadow:0 16px 30px -14px rgba(194,65,12,.6);}
@@ -409,7 +422,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .heroDate{font-size:12.5px;opacity:.85;margin-top:3px;}
 .heroMsg{font-size:13.5px;margin-top:10px;background:rgba(255,255,255,.18);padding:7px 12px;border-radius:20px;display:inline-block;}
 .quickGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin-bottom:18px;}
-.qBtn{border:none;border-radius:14px;padding:14px 14px 13px;color:#fff;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;box-shadow:0 10px 20px -10px rgba(0,0,0,.35);transition:transform .12s,filter .12s;}
+.qBtn{border:none;border-radius:14px;padding:14px 14px 13px;color:#fff;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;box-shadow:0 10px 20px -10px rgba(0,0,0,.35);transition:transform .12s;}
 .qBtn:hover{transform:translateY(-3px);filter:brightness(1.07);}
 .qBtn:active{transform:scale(.97);}
 .qBtn .qi{font-size:24px;line-height:1;}
@@ -581,7 +594,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
       <div id="view-pos" class="viewpane hidden">
         <div class="posWrap">
           <div>
-            <div class="searchbox" style="margin-bottom:14px;width:100%;max-width:320px;"><span class="ic">🔎</span><input id="posSearch" placeholder="Cari menu..." oninput="renderMenuGrid()"></div>
+            <div class="searchbox" style="margin-bottom:14px;width:100%;max-width:320px;"><span class="ic">🔎</span><input id="posSearch" placeholder="Cari menu..." oninput="dbRenderMenuGrid()"></div>
             <div class="catTabs" id="catTabs"></div>
             <div class="menuGrid" id="menuGrid"></div>
           </div>
@@ -638,7 +651,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
       <!-- ===== RIWAYAT ===== -->
       <div id="view-riwayat" class="viewpane hidden">
         <div class="toolbar">
-          <div class="searchbox"><span class="ic">🔎</span><input id="riwSearch" placeholder="Cari no. transaksi..." oninput="renderRiwayat()"></div>
+          <div class="searchbox"><span class="ic">🔎</span><input id="riwSearch" placeholder="Cari no. transaksi..." oninput="dbRenderRiwayat()"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <input type="date" id="riwDate" class="mono" style="background:var(--surface-2);border:1px solid var(--line);color:var(--cream);padding:9px 12px;border-radius:9px;" onchange="renderRiwayat()">
             <select id="riwOrderType" style="background:var(--surface-2);border:1px solid var(--line);color:var(--cream);padding:9px 12px;border-radius:9px;font-size:13px;" onchange="renderRiwayat()">
@@ -672,7 +685,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
                 <button class="btn btn-primary btn-sm" onclick="renderPiutangList()">Terapkan</button>
               </div>
             </div>
-            <div class="searchbox"><span class="ic">🔎</span><input id="piutSearch" placeholder="Cari nama pelanggan..." oninput="renderPiutangList()"></div>
+            <div class="searchbox"><span class="ic">🔎</span><input id="piutSearch" placeholder="Cari nama pelanggan..." oninput="dbRenderPiutang()"></div>
           </div>
         </div>
         <div class="grid g4" style="margin-bottom:16px;">
@@ -695,7 +708,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
         </div>
         <div id="menuTab-produk">
           <div class="toolbar">
-            <div class="searchbox"><span class="ic">🔎</span><input id="prodSearch" placeholder="Cari produk..." oninput="renderProdukTable()"></div>
+            <div class="searchbox"><span class="ic">🔎</span><input id="prodSearch" placeholder="Cari produk..." oninput="dbRenderProduk()"></div>
             <button class="btn btn-primary btn-sm" onclick="openProdukModal()">+ Tambah Produk</button>
           </div>
           <div class="card"><div class="tblwrap"><table>
@@ -960,14 +973,32 @@ function toast(msg, type){
   setTimeout(()=>el.remove(), 3200);
 }
 
+
+/* ===== PERF HELPERS (anti-lemot Android) ===== */
+var dbRenderMenuGrid, dbRenderRiwayat, dbRenderPiutang, dbRenderProduk;
+const _schedT = {};
+function sched(key, fn, ms){ clearTimeout(_schedT[key]); _schedT[key] = setTimeout(fn, ms==null?120:ms); }
+function debounced(fn, ms){ let t; return function(){ clearTimeout(t); const a=arguments; t=setTimeout(()=>fn.apply(null,a), ms||200); }; }
+dbRenderMenuGrid = debounced(()=>renderMenuGrid(), 180);
+dbRenderRiwayat = debounced(()=>renderRiwayat(), 220);
+dbRenderPiutang = debounced(()=>renderPiutangList(), 220);
+dbRenderProduk = debounced(()=>renderProdukTable(), 220);
+
 /* =========================================================
    CLOCK
 ========================================================= */
+let _clockDay = "", _clockDateStr = "";
 setInterval(()=>{
+  if(document.hidden) return;
   const d = new Date();
-  const days=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
-  document.getElementById("clockBox").textContent =
-    days[d.getDay()]+", "+d.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})+" · "+nowTimeStr();
+  const dk = d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate();
+  if(dk !== _clockDay){
+    _clockDay = dk;
+    const days=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+    _clockDateStr = days[d.getDay()]+", "+d.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})+" · ";
+  }
+  const el = document.getElementById("clockBox");
+  if(el) el.textContent = _clockDateStr+nowTimeStr();
 }, 1000);
 
 /* =========================================================
@@ -1144,12 +1175,12 @@ function onFirebaseErr(label){
   };
 }
 function bindListeners(){
-  db.ref("categories").on("value", snap=>{ categories = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderKategoriTable(); buildCatTabs(); if(currentView==="dashboard") renderDashboard(); }, onFirebaseErr("kategori"));
-  db.ref("products").on("value", snap=>{ products = snap.val()||{}; if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderProdukTable(); if(currentView==="stok"){renderStokTable();} if(currentView==="dashboard") renderDashboard(); }, onFirebaseErr("produk"));
+  db.ref("categories").on("value", snap=>{ categories = snap.val()||{}; sched("cat",()=>{ if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderKategoriTable(); buildCatTabs(); if(currentView==="dashboard") renderDashboard(); }); }, onFirebaseErr("kategori"));
+  db.ref("products").on("value", snap=>{ products = snap.val()||{}; sched("prod",()=>{ if(currentView==="pos") renderMenuGrid(); if(currentView==="menu") renderProdukTable(); if(currentView==="stok"){renderStokTable();} if(currentView==="dashboard") renderDashboard(); }); }, onFirebaseErr("produk"));
   db.ref("users").on("value", snap=>{ users = snap.val()||{}; if(currentView==="users") renderUsersTable(); }, onFirebaseErr("pengguna"));
-  db.ref("transactions").on("value", snap=>{ allTransactions = snap.val()||{}; if(currentView==="riwayat") renderRiwayat(); if(currentView==="dashboard") renderDashboard(); if(currentView==="laporan") runLaporan(); if(currentView==="piutang") renderPiutangList(); }, onFirebaseErr("transaksi"));
+  db.ref("transactions").on("value", snap=>{ allTransactions = snap.val()||{}; sched("trx",()=>{ if(currentView==="riwayat") renderRiwayat(); if(currentView==="dashboard") renderDashboard(); if(currentView==="laporan") runLaporan(); if(currentView==="piutang") renderPiutangList(); }, 250); }, onFirebaseErr("transaksi"));
   db.ref("active_tables").on("value", snap=>{ activeTables = snap.val()||{}; if(currentView==="pos" && orderType==="Dine In") buildMejaGrid(); }, onFirebaseErr("status meja"));
-  db.ref("stock_movements").on("value", snap=>{ stockMovements = snap.val()||{}; if(currentView==="stok") renderStokMovements(); }, onFirebaseErr("pergerakan stok"));
+  db.ref("stock_movements").on("value", snap=>{ stockMovements = snap.val()||{}; sched("stm",()=>{ if(currentView==="stok") renderStokMovements(); }); }, onFirebaseErr("pergerakan stok"));
   db.ref("settings").on("value", snap=>{ const s = snap.val(); if(s) settings = {...settings, ...s}; if(currentView==="settings") fillSettingsForm(); }, onFirebaseErr("pengaturan toko"));
   bindKitchenListeners();
   initRadioPresenceWatcher();
@@ -1182,27 +1213,31 @@ function renderMenuGrid(){
   const grid = document.getElementById("menuGrid");
   if(!grid) return;
   const q = (document.getElementById("posSearch")?.value||"").toLowerCase();
-  grid.innerHTML = "";
   const entries = Object.entries(products).filter(([id,p])=>{
     if(activeCat!=="all" && p.category!==activeCat) return false;
     if(q && !(p.name||"").toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
   if(entries.length===0){ grid.innerHTML = `<div class="emptystate" style="grid-column:1/-1;"><div class="ic">☕</div>Tidak ada menu ditemukan.</div>`; return; }
-  entries.forEach(([id,p])=>{
-    const inCartQty = cart.filter(c=>c.id===id).reduce((s,c)=>s+c.qty,0);
+  const qtyMap = {};
+  for(const c of cart){ qtyMap[c.id] = (qtyMap[c.id]||0) + c.qty; }
+  grid.innerHTML = entries.map(([id,p])=>{
+    const inCartQty = qtyMap[id]||0;
     const off = p.active===false;
-    const card = document.createElement("div");
-    card.className = "menuCard" + (off?" off":"");
-    card.innerHTML = `
-      ${inCartQty?`<div class="qtyTag">${inCartQty}</div>`:""}
-      <div class="photo" style="${p.photoUrl?`background-image:url('${p.photoUrl}')`:""}">${p.photoUrl?"":"☕"}</div>
-      <div class="nm">${p.name||"-"}</div>
-      <div class="pr">${fmtRp(p.price)}</div>`;
-    card.onclick = ()=> !off && addToCart(id);
-    grid.appendChild(card);
-  });
+    const img = p.photoUrl ? `<img src="${String(p.photoUrl).replace(/"/g,"&quot;")}" loading="lazy" decoding="async" alt="">` : "☕";
+    return `<div class="menuCard${off?" off":""}" data-id="${id}">${inCartQty?`<div class="qtyTag">${inCartQty}</div>`:""}<div class="photo">${img}</div><div class="nm">${p.name||"-"}</div><div class="pr">${fmtRp(p.price)}</div></div>`;
+  }).join("");
 }
+(function bindMenuGridClick(){
+  document.addEventListener("click", e=>{
+    const card = e.target.closest && e.target.closest("#menuGrid .menuCard");
+    if(!card) return;
+    const id = card.getAttribute("data-id");
+    const p = products[id];
+    if(!p || p.active===false) return;
+    addToCart(id);
+  });
+})();
 
 /* =========================================================
    CART
@@ -1826,6 +1861,7 @@ function printPiutangStatement(idx){
    DASHBOARD
 ========================================================= */
 function renderDashboard(){
+  if (typeof Chart !== "undefined" && !Chart.__tuned){ Chart.__tuned = true; Chart.defaults.animation = false; Chart.defaults.devicePixelRatio = Math.min(window.devicePixelRatio||1, 2); }
   if (typeof Chart === "undefined") {
     console.warn("Chart.js belum termuat, grafik dilewati sementara.");
   }
@@ -3208,7 +3244,7 @@ function setupRadioSpeakingDetector(peerUid, stream){
         radioMembers[peerUid].speaking = isSpeaking;
         renderRadioMembers();
       }
-      requestAnimationFrame(tick);
+      setTimeout(()=>requestAnimationFrame(tick), 100);
     };
     tick();
   }catch(e){ console.warn("radio speaking detector gagal", e); }
