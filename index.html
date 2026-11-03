@@ -563,7 +563,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
           <div class="card statCard sc-color sc8"><div class="ic">📅</div><div class="lbl">Penjualan Kemarin</div><div class="val" id="dashYesterday">Rp0</div><div class="sub" id="dashYesterdaySub">-</div></div>
         </div>
         <div class="grid g2" style="margin-bottom:16px;">
-          <div class="card cc cc-blue"><h3 style="margin-top:0;font-family:var(--font-display);">📈 Penjualan 7 Hari</h3><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
+          <div class="card cc cc-blue"><h3 style="margin-top:0;font-family:var(--font-display);">📊 Penjualan 7 Hari vs 7 Hari Sebelumnya</h3><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
           <div class="card cc cc-pink"><h3 style="margin-top:0;font-family:var(--font-display);">💳 Metode Pembayaran (Hari Ini)</h3><div class="chartBox"><canvas id="chartPayment"></canvas></div></div>
         </div>
         <div class="grid g2">
@@ -1910,9 +1910,17 @@ function renderDashboard(){
   const ctx1 = document.getElementById("chartWeekly");
   if(ctx1){
     if(chartWeekly) chartWeekly.destroy();
-    const g = ctx1.getContext("2d").createLinearGradient(0,0,0,230);
-    g.addColorStop(0,"rgba(37,99,235,.45)"); g.addColorStop(1,"rgba(124,58,237,.03)");
-    chartWeekly = new Chart(ctx1, { type:"line", data:{ labels:dayLabels, datasets:[{ label:"Penjualan", data:dayKeys.map(salesOn), borderColor:"#2563eb", backgroundColor:g, tension:.4, fill:true, borderWidth:3, pointRadius:4, pointBackgroundColor:"#fff", pointBorderColor:"#2563eb", pointBorderWidth:2 }]}, options: chartOpts(true) });
+    // 7 hari terakhir vs 7 hari sebelumnya (dibandingkan per urutan hari)
+    const prevKeys = [];
+    for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i-7); prevKeys.push(d.toISOString().slice(0,10)); }
+    const fmtShort = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"});
+    const optsW = chartOpts(true);
+    optsW.plugins.legend = { display:true, labels:{ color: getComputedStyle(document.body).getPropertyValue("--cream-dim").trim() || "#5c6478", usePointStyle:true, boxWidth:8 } };
+    optsW.plugins.tooltip.callbacks.title = items => items.length ? (items[0].datasetIndex===0 ? fmtShort(dayKeys[items[0].dataIndex]) : fmtShort(prevKeys[items[0].dataIndex])) : "";
+    chartWeekly = new Chart(ctx1, { type:"bar", data:{ labels:dayLabels, datasets:[
+      { label:"7 Hari Terakhir", data:dayKeys.map(salesOn), backgroundColor:"#2563eb", borderRadius:6 },
+      { label:"7 Hari Sebelumnya", data:prevKeys.map(salesOn), backgroundColor:"#f59e0b", borderRadius:6 }
+    ]}, options: optsW });
   }
 
   const payAgg = {};
