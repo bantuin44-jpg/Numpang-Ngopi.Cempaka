@@ -563,7 +563,7 @@ tr:hover td{background:rgba(244,234,216,.02);}
           <div class="card statCard sc-color sc8"><div class="ic">📅</div><div class="lbl">Penjualan Kemarin</div><div class="val" id="dashYesterday">Rp0</div><div class="sub" id="dashYesterdaySub">-</div></div>
         </div>
         <div class="grid g2" style="margin-bottom:16px;">
-          <div class="card cc cc-blue"><h3 style="margin-top:0;font-family:var(--font-display);">📊 Penjualan 7 Hari vs 7 Hari Sebelumnya</h3><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
+          <div class="card cc cc-blue"><h3 style="margin-top:0;font-family:var(--font-display);">📊 Minggu Ini vs Minggu Lalu</h3><div id="weeklyCmp" style="margin:-4px 0 10px;font-size:12.5px;font-weight:700;"></div><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
           <div class="card cc cc-pink"><h3 style="margin-top:0;font-family:var(--font-display);">💳 Metode Pembayaran (Hari Ini)</h3><div class="chartBox"><canvas id="chartPayment"></canvas></div></div>
         </div>
         <div class="grid g2">
@@ -1910,16 +1910,47 @@ function renderDashboard(){
   const ctx1 = document.getElementById("chartWeekly");
   if(ctx1){
     if(chartWeekly) chartWeekly.destroy();
-    // 7 hari terakhir vs 7 hari sebelumnya (dibandingkan per urutan hari)
-    const prevKeys = [];
-    for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i-7); prevKeys.push(d.toISOString().slice(0,10)); }
-    const fmtShort = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"});
+    // Minggu ini (Sen–Min, sampai hari ini) vs minggu lalu, per hari + garis % naik/turun
+    const ymd = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const baseD = new Date(today+"T00:00:00");
+    const dowToday = (baseD.getDay()+6)%7;           // Senin = 0
+    const monThis = new Date(baseD); monThis.setDate(baseD.getDate()-dowToday);
+    const wkKeys = (offsetDays)=>Array.from({length:7},(_,i)=>{ const d=new Date(monThis); d.setDate(monThis.getDate()+i+offsetDays); return ymd(d); });
+    const thisKeys = wkKeys(0), lastKeys = wkKeys(-7);
+    const wkLabels = ["Sen","Sel","Rab","Kam","Jum","Sab","Min"];
+    const thisData = thisKeys.map((k,i)=> i<=dowToday ? salesOn(k) : null);
+    const lastData = lastKeys.map(salesOn);
+    const pctData = thisData.map((v,i)=> (v===null || lastData[i]<=0) ? null : Math.round((v-lastData[i])/lastData[i]*1000)/10);
+    const fmtShort = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"short"});
+    const thisSum = thisData.reduce((a,v)=>a+(v||0),0);
+    const lastSumSame = lastData.slice(0,dowToday+1).reduce((a,v)=>a+v,0);
+    const cmpEl = document.getElementById("weeklyCmp");
+    if(cmpEl){
+      if(lastSumSame>0){
+        const pc = (thisSum-lastSumSame)/lastSumSame*100;
+        cmpEl.style.color = pc>=0 ? "#059669" : "#e11d48";
+        cmpEl.textContent = (pc>=0?"▲ Naik ":"▼ Turun ")+Math.abs(pc).toFixed(1).replace(".",",")+"% · "+fmtRp(thisSum)+" vs "+fmtRp(lastSumSame)+" (minggu lalu, s/d hari yang sama)";
+      } else {
+        cmpEl.style.color = dimTxt;
+        cmpEl.textContent = thisSum>0 ? fmtRp(thisSum)+" minggu ini · belum ada pembanding minggu lalu" : "Belum ada data penjualan minggu ini";
+      }
+    }
     const optsW = chartOpts(true);
-    optsW.plugins.legend = { display:true, labels:{ color: getComputedStyle(document.body).getPropertyValue("--cream-dim").trim() || "#5c6478", usePointStyle:true, boxWidth:8 } };
-    optsW.plugins.tooltip.callbacks.title = items => items.length ? (items[0].datasetIndex===0 ? fmtShort(dayKeys[items[0].dataIndex]) : fmtShort(prevKeys[items[0].dataIndex])) : "";
-    chartWeekly = new Chart(ctx1, { type:"bar", data:{ labels:dayLabels, datasets:[
-      { label:"7 Hari Terakhir", data:dayKeys.map(salesOn), backgroundColor:"#2563eb", borderRadius:6 },
-      { label:"7 Hari Sebelumnya", data:prevKeys.map(salesOn), backgroundColor:"#f59e0b", borderRadius:6 }
+    const cvTxt = dimTxt;
+    optsW.plugins.legend = { display:true, labels:{ color:cvTxt, usePointStyle:true, boxWidth:8 } };
+    optsW.scales.y1 = { position:"right", grid:{ drawOnChartArea:false }, ticks:{ color:cvTxt, callback:v=>v+"%" }, title:{ display:false } };
+    optsW.plugins.tooltip.callbacks.title = items => {
+      if(!items.length) return "";
+      const i = items[0].dataIndex; return fmtShort(thisKeys[i])+" / "+fmtShort(lastKeys[i]);
+    };
+    optsW.plugins.tooltip.callbacks.label = c => {
+      if(c.dataset.type==="line"){ const v=c.parsed.y; return v===null ? "" : " "+(v>=0?"▲ Naik ":"▼ Turun ")+Math.abs(v).toString().replace(".",",")+"%"; }
+      return " "+c.dataset.label+": "+fmtRp(c.parsed.y);
+    };
+    chartWeekly = new Chart(ctx1, { type:"bar", data:{ labels:wkLabels, datasets:[
+      { type:"bar", label:"Minggu Lalu", data:lastData, backgroundColor:"#f59e0b", borderRadius:6, order:2 },
+      { type:"bar", label:"Minggu Ini", data:thisData, backgroundColor:"#2563eb", borderRadius:6, order:2 },
+      { type:"line", label:"% Naik/Turun", data:pctData, yAxisID:"y1", borderColor:"#7c3aed", backgroundColor:"#7c3aed", borderWidth:2.5, tension:.3, spanGaps:true, pointRadius:5, pointBorderColor:"#fff", pointBorderWidth:2, pointBackgroundColor:pctData.map(v=>v===null?"#7c3aed":(v>=0?"#059669":"#e11d48")), order:1 }
     ]}, options: optsW });
   }
 
