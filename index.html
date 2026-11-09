@@ -436,78 +436,6 @@ tr:hover td{background:rgba(244,234,216,.02);}
 .cc{border-top:4px solid var(--accent);} .cc-blue{border-top-color:#2563eb;} .cc-pink{border-top-color:#db2777;} .cc-teal{border-top-color:#0891b2;} .cc-amber{border-top-color:#d97706;}
 .cc h3{display:flex;align-items:center;gap:8px;}
 
-
-/* ===== Dashboard v2 — tampilan profesional & elegan ===== */
-:root{
-  --bg:#f3f1ed; --surface-2:#f7f5f1; --surface-3:#ece8e0;
-  --cream:#221b15; --cream-dim:#5d554b; --cream-faint:#8f867a;
-  --line:rgba(42,31,23,.09); --line-strong:rgba(42,31,23,.17);
-  --shadow:0 8px 24px rgba(42,31,23,.08);
-  --sidebar-bg:#2a1f17; --sidebar-bg-2:#1d1510;
-  --topbar-bg:rgba(255,255,255,.88);
-}
-body,body.theme-dark{background:var(--bg);}
-.sidebar{background:linear-gradient(180deg,var(--sidebar-bg),var(--sidebar-bg-2));}
-.navItem.active{box-shadow:inset 3px 0 0 #d9a95b;}
-.topbar{backdrop-filter:saturate(1.2) blur(10px);-webkit-backdrop-filter:saturate(1.2) blur(10px);}
-.topbar h1{font-size:20px;letter-spacing:-.01em;}
-
-#view-dashboard{
-  --d-ink:#221b15; --d-ink-2:#5d554b; --d-ink-3:#8f867a;
-  --d-card:#ffffff; --d-line:#e7e3da; --d-accent:#a8742a; --d-strong:#2a1f17; --d-on-strong:#fbf6ee;
-  --d-up:#3f7d58; --d-up-bg:#e8f1ea; --d-down:#b5524f; --d-down-bg:#f8e9e8;
-  max-width:1280px;margin:0 auto;
-}
-body.theme-dark #view-dashboard{
-  --d-ink:#f1e9dc; --d-ink-2:#c9bca6; --d-ink-3:#8f8270;
-  --d-card:#1c1610; --d-line:rgba(244,234,216,.12); --d-accent:#d9a95b; --d-strong:#d9a95b; --d-on-strong:#1c1610;
-  --d-up:#8fc4a1; --d-up-bg:rgba(143,196,161,.14); --d-down:#e0958f; --d-down-bg:rgba(224,149,143,.14);
-}
-#view-dashboard .dHead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:24px;}
-#view-dashboard .dHi{font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.15;letter-spacing:-.01em;color:var(--d-ink);margin:0;}
-#view-dashboard .dDate{font-size:13px;color:var(--d-ink-3);margin-top:6px;}
-#view-dashboard .dMsg{font-size:13.5px;line-height:1.55;color:var(--d-ink-2);margin-top:12px;max-width:64ch;padding-left:12px;border-left:2px solid var(--d-accent);}
-#view-dashboard .dActions{display:flex;gap:8px;flex-wrap:wrap;}
-#view-dashboard .dBtn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;border:1px solid var(--d-line);background:var(--d-card);color:var(--d-ink);font-size:13px;font-weight:600;transition:border-color .15s,background .15s;}
-#view-dashboard .dBtn svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-#view-dashboard .dBtn:hover{border-color:var(--d-accent);}
-#view-dashboard .dBtn.primary{background:var(--d-strong);border-color:var(--d-strong);color:var(--d-on-strong);}
-#view-dashboard .dBtn.primary:hover{filter:brightness(1.12);}
-#view-dashboard .dBtn:focus-visible{outline:2px solid var(--d-accent);outline-offset:2px;}
-
-#view-dashboard .dGroup{margin-bottom:20px;}
-#view-dashboard .dGroupTitle{font-size:13px;font-weight:600;color:var(--d-ink-2);margin:0 2px 8px;}
-#view-dashboard .kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--d-line);border:1px solid var(--d-line);border-radius:14px;overflow:hidden;}
-#view-dashboard .kpi>div{background:var(--d-card);padding:18px 20px;min-width:0;}
-#view-dashboard .kpi .lbl{font-size:12.5px;font-weight:500;color:var(--d-ink-3);margin-bottom:8px;}
-#view-dashboard .kpi .val{font-family:var(--font-ui);font-weight:600;font-size:24px;line-height:1.15;letter-spacing:-.02em;color:var(--d-ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
-#view-dashboard .kpi .val.txt{font-size:17px;letter-spacing:-.01em;line-height:1.3;}
-#view-dashboard .kpi .lead .val{font-size:30px;}
-#view-dashboard .kpi .sub{font-size:12.5px;color:var(--d-ink-3);margin-top:6px;line-height:1.4;}
-#view-dashboard .trendPill{display:inline-flex;margin-top:10px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--d-up-bg);color:var(--d-up);}
-#view-dashboard .trendPill.down{background:var(--d-down-bg);color:var(--d-down);}
-
-#view-dashboard .dRow{display:grid;gap:16px;margin-bottom:16px;}
-#view-dashboard .dRow.r21{grid-template-columns:minmax(0,2fr) minmax(0,1fr);}
-#view-dashboard .dRow.r11{grid-template-columns:repeat(2,minmax(0,1fr));}
-#view-dashboard .dPanel{background:var(--d-card);border:1px solid var(--d-line);border-radius:14px;padding:18px 20px 16px;min-width:0;}
-#view-dashboard .dPanel h3{font-family:var(--font-display);font-size:16px;font-weight:700;letter-spacing:-.005em;color:var(--d-ink);margin:0;}
-#view-dashboard .dPanel .hint{font-size:12.5px;color:var(--d-ink-3);margin:3px 0 14px;}
-#view-dashboard .dPanel .dNote{font-size:12.5px;font-weight:600;line-height:1.5;margin:-8px 0 12px;}
-
-@media (max-width:980px){
-  #view-dashboard .kpi{grid-template-columns:repeat(2,minmax(0,1fr));}
-  #view-dashboard .dRow.r21,#view-dashboard .dRow.r11{grid-template-columns:minmax(0,1fr);}
-}
-@media (max-width:560px){
-  #view-dashboard .dHi{font-size:23px;}
-  #view-dashboard .kpi>div{padding:14px;}
-  #view-dashboard .kpi .val{font-size:20px;}
-  #view-dashboard .kpi .lead .val{font-size:22px;}
-  #view-dashboard .dBtn{padding:8px 11px;font-size:12.5px;}
-  #view-dashboard .dPanel{padding:16px 14px 12px;}
-}
-
 /* ===== Cetak / PDF (dikontrol lewat class di <body>: print-report / print-receipt) ===== */
 @media print{
   html,body{height:auto !important;min-height:0 !important;overflow:visible !important;background:#fff !important;}
@@ -614,64 +542,50 @@ body.theme-dark #view-dashboard{
     <div class="viewBody" id="viewBody">
       <!-- ===== DASHBOARD ===== -->
       <div id="view-dashboard" class="viewpane hidden">
-        <div class="dHead">
+        <div class="heroBanner">
           <div>
-            <h2 class="dHi" id="heroHi">Halo!</h2>
-            <div class="dDate" id="heroDate">-</div>
-            <div class="dMsg" id="heroMsg">-</div>
-          </div>
-          <div class="dActions">
-            <button class="dBtn primary" onclick="switchView('pos')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>Transaksi baru</button>
-            <button class="dBtn" onclick="switchView('dapur')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>Layar dapur</button>
-            <button class="dBtn" onclick="switchView('piutang')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Tagihan</button>
-            <button class="dBtn" onclick="switchView('laporan')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Laporan</button>
-            <button class="dBtn" onclick="quickPdfToday()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>PDF hari ini</button>
-            <button class="dBtn" onclick="shareRingkasanWA()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Kirim ringkasan WA</button>
+            <div class="heroHi" id="heroHi">Halo! ☕</div>
+            <div class="heroDate" id="heroDate">-</div>
+            <div class="heroMsg" id="heroMsg">-</div>
           </div>
         </div>
-
-        <section class="dGroup">
-          <h3 class="dGroupTitle">Penjualan</h3>
-          <div class="kpi">
-            <div class="lead"><div class="lbl">Penjualan hari ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div><span class="trendPill" id="dashSalesTrend">-</span></div>
-            <div><div class="lbl">Penjualan kemarin</div><div class="val" id="dashYesterday">Rp0</div><div class="sub" id="dashYesterdaySub">-</div></div>
-            <div><div class="lbl">Jumlah transaksi</div><div class="val" id="dashTrx">0</div><div class="sub">Hari ini</div></div>
-            <div><div class="lbl">Rata-rata transaksi</div><div class="val" id="dashAvg">Rp0</div><div class="sub">Per struk</div></div>
-          </div>
-        </section>
-
-        <section class="dGroup">
-          <h3 class="dGroupTitle">Cup terjual</h3>
-          <div class="kpi">
-            <div class="lead"><div class="lbl">Cup hari ini</div><div class="val" id="dashCup">0</div><div class="sub" id="dashCupSub">-</div><span class="trendPill" id="dashCupTrend">-</span></div>
-            <div><div class="lbl">Cup 7 hari terakhir</div><div class="val" id="dashCupWeek">0</div><div class="sub" id="dashCupWeekSub">-</div></div>
-            <div><div class="lbl">Cup bulan ini</div><div class="val" id="dashCupMonth">0</div><div class="sub" id="dashCupMonthSub">-</div></div>
-            <div><div class="lbl">Cup terlaris hari ini</div><div class="val txt" id="dashCupTop">-</div><div class="sub" id="dashCupTopSub">-</div></div>
-          </div>
-        </section>
-
-        <section class="dGroup">
-          <h3 class="dGroupTitle">Operasional</h3>
-          <div class="kpi">
-            <div><div class="lbl">Produk terlaris</div><div class="val txt" id="dashTop">-</div><div class="sub" id="dashTopSub">-</div></div>
-            <div><div class="lbl">Jam tersibuk</div><div class="val txt" id="dashPeak">-</div><div class="sub" id="dashPeakSub">-</div></div>
-            <div><div class="lbl">Dine in / takeaway</div><div class="val" id="dashMix">0 / 0</div><div class="sub" id="dashMixSub">-</div></div>
-            <div><div class="lbl">Piutang belum lunas</div><div class="val" id="dashPiutang">Rp0</div><div class="sub" id="dashPiutangSub">-</div></div>
-          </div>
-        </section>
-
-        <div class="dRow r21">
-          <div class="dPanel"><h3>Minggu ini vs minggu lalu</h3><div class="hint">Penjualan lunas per hari, Senin sampai Minggu</div><div id="weeklyCmp" class="dNote"></div><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
-          <div class="dPanel"><h3>Metode pembayaran</h3><div class="hint">Komposisi penjualan hari ini</div><div class="chartBox"><canvas id="chartPayment"></canvas></div></div>
+        <div class="quickGrid">
+          <button class="qBtn q1" onclick="switchView('pos')"><span class="qi">🛒</span>Transaksi Baru</button>
+          <button class="qBtn q2" onclick="switchView('dapur')"><span class="qi">🍳</span>Layar Dapur</button>
+          <button class="qBtn q3" onclick="switchView('piutang')"><span class="qi">📒</span>Tagihan</button>
+          <button class="qBtn q4" onclick="switchView('laporan')"><span class="qi">📈</span>Laporan</button>
+          <button class="qBtn q5" onclick="quickPdfToday()"><span class="qi">📄</span>PDF Hari Ini</button>
+          <button class="qBtn q6" onclick="shareRingkasanWA()"><span class="qi">💬</span>Kirim Ringkasan WA</button>
         </div>
-        <div class="dRow r11">
-          <div class="dPanel"><h3>Penjualan per jam</h3><div class="hint">Hari ini, jam tersibuk ditandai</div><div class="chartBox"><canvas id="chartHourly"></canvas></div></div>
-          <div class="dPanel"><h3>Produk terlaris</h3><div class="hint">Jumlah terjual dalam 7 hari terakhir</div><div class="chartBox"><canvas id="chartTopProduct"></canvas></div></div>
+        <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc2"><div class="ic">☕</div><div class="lbl">Cup Terjual Hari Ini</div><div class="val" id="dashCup">0</div><div class="sub" id="dashCupSub">-</div><span class="trendPill" id="dashCupTrend">-</span></div>
+          <div class="card statCard sc-color sc6"><div class="ic">📆</div><div class="lbl">Cup 7 Hari Terakhir</div><div class="val" id="dashCupWeek">0</div><div class="sub" id="dashCupWeekSub">-</div></div>
+          <div class="card statCard sc-color sc5"><div class="ic">🗓</div><div class="lbl">Cup Bulan Ini</div><div class="val" id="dashCupMonth">0</div><div class="sub" id="dashCupMonthSub">-</div></div>
+          <div class="card statCard sc-color sc7"><div class="ic">🥤</div><div class="lbl">Cup Terlaris Hari Ini</div><div class="val" id="dashCupTop" style="font-size:16px;">-</div><div class="sub" id="dashCupTopSub">-</div></div>
         </div>
-        <div class="dPanel">
-          <h3>Tren penjualan sejak awal rilis</h3>
-          <div class="hint">Harian, rata-rata 7 hari, dan garis tren</div>
-          <div id="trendSummary" class="dNote"></div>
+        <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc1"><div class="ic">💰</div><div class="lbl">Penjualan Hari Ini</div><div class="val" id="dashSales">Rp0</div><div class="sub" id="dashSalesSub">-</div><span class="trendPill" id="dashSalesTrend">-</span></div>
+          <div class="card statCard sc-color sc2"><div class="ic">🧾</div><div class="lbl">Jumlah Transaksi</div><div class="val" id="dashTrx">0</div><div class="sub">Hari ini</div></div>
+          <div class="card statCard sc-color sc3"><div class="ic">⭐</div><div class="lbl">Produk Terlaris</div><div class="val" id="dashTop" style="font-size:16px;">-</div><div class="sub" id="dashTopSub">-</div></div>
+          <div class="card statCard sc-color sc4"><div class="ic">📊</div><div class="lbl">Rata-rata Transaksi</div><div class="val" id="dashAvg">Rp0</div><div class="sub">Per struk</div></div>
+        </div>
+        <div class="grid g4" style="margin-bottom:16px;">
+          <div class="card statCard sc-color sc5"><div class="ic">📋</div><div class="lbl">Piutang Belum Lunas</div><div class="val" id="dashPiutang">Rp0</div><div class="sub" id="dashPiutangSub">-</div></div>
+          <div class="card statCard sc-color sc6"><div class="ic">⏰</div><div class="lbl">Jam Tersibuk</div><div class="val" id="dashPeak" style="font-size:19px;">-</div><div class="sub" id="dashPeakSub">-</div></div>
+          <div class="card statCard sc-color sc7"><div class="ic">🍽</div><div class="lbl">Dine In / Takeaway</div><div class="val" id="dashMix">0 / 0</div><div class="sub" id="dashMixSub">-</div></div>
+          <div class="card statCard sc-color sc8"><div class="ic">📅</div><div class="lbl">Penjualan Kemarin</div><div class="val" id="dashYesterday">Rp0</div><div class="sub" id="dashYesterdaySub">-</div></div>
+        </div>
+        <div class="grid g2" style="margin-bottom:16px;">
+          <div class="card cc cc-blue"><h3 style="margin-top:0;font-family:var(--font-display);">📊 Minggu Ini vs Minggu Lalu</h3><div id="weeklyCmp" style="margin:-4px 0 10px;font-size:12.5px;font-weight:700;"></div><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
+          <div class="card cc cc-pink"><h3 style="margin-top:0;font-family:var(--font-display);">💳 Metode Pembayaran (Hari Ini)</h3><div class="chartBox"><canvas id="chartPayment"></canvas></div></div>
+        </div>
+        <div class="grid g2">
+          <div class="card cc cc-teal"><h3 style="margin-top:0;font-family:var(--font-display);">⏰ Penjualan per Jam (Hari Ini)</h3><div class="chartBox"><canvas id="chartHourly"></canvas></div></div>
+          <div class="card cc cc-amber"><h3 style="margin-top:0;font-family:var(--font-display);">⭐ Produk Terlaris (7 Hari)</h3><div class="chartBox"><canvas id="chartTopProduct"></canvas></div></div>
+        </div>
+        <div class="card cc cc-blue" style="margin-top:16px;">
+          <h3 style="margin-top:0;font-family:var(--font-display);">📉 Tren Penjualan Sejak Awal Rilis</h3>
+          <div id="trendSummary" style="margin:-4px 0 10px;font-size:12.5px;font-weight:700;"></div>
           <div class="chartBox" style="height:300px;"><canvas id="chartTrend"></canvas></div>
         </div>
       </div>
@@ -1948,7 +1862,7 @@ function printPiutangStatement(idx){
    DASHBOARD
 ========================================================= */
 function renderDashboard(){
-  if (typeof Chart !== "undefined" && !Chart.__tuned){ Chart.__tuned = true; Chart.defaults.animation = false; Chart.defaults.font.family = "Inter, sans-serif"; Chart.defaults.font.size = 11.5; Chart.defaults.devicePixelRatio = Math.min(window.devicePixelRatio||1, 2); }
+  if (typeof Chart !== "undefined" && !Chart.__tuned){ Chart.__tuned = true; Chart.defaults.animation = false; Chart.defaults.devicePixelRatio = Math.min(window.devicePixelRatio||1, 2); }
   if (typeof Chart === "undefined") {
     console.warn("Chart.js belum termuat, grafik dilewati sementara.");
   }
@@ -2026,17 +1940,13 @@ function renderDashboard(){
 
   const hr = new Date().getHours();
   const sapa = hr<11 ? "Selamat pagi" : hr<15 ? "Selamat siang" : hr<18 ? "Selamat sore" : "Selamat malam";
-  setTxt("heroHi", sapa+", "+((currentUser&&currentUser.name)||"Owner")+"");
+  setTxt("heroHi", sapa+", "+((currentUser&&currentUser.name)||"Owner")+"! ☕");
   setTxt("heroDate", new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"}));
-  setTxt("heroMsg", totalSales>0 ? "Hari ini sudah masuk "+fmtRp(totalSales)+" dari "+todayPaidTrx.length+" transaksi lunas dan "+fmtN(cupToday)+" cup terjual." : "Belum ada penjualan lunas hari ini. Semangat buka toko!");
+  setTxt("heroMsg", totalSales>0 ? "Hari ini sudah masuk "+fmtRp(totalSales)+" dari "+todayPaidTrx.length+" transaksi lunas · ☕ "+fmtN(cupToday)+" cup terjual." : "Belum ada penjualan lunas hari ini. Semangat buka toko!");
   dashSnap = { cup:cupToday, totalSales, trx:todayTrx.length, avg: todayPaidTrx.length ? totalSales/todayPaidTrx.length : 0, top:topEntry, piutang:piutangTotal, piutangN:todayUnpaid.length, peakH, trend:trendTxt };
 
   if(typeof Chart === "undefined") return; // library grafik belum siap
-  const dk = document.body.classList.contains("theme-dark");
-  const PAL = dk ? ["#d9a95b","#8fb59a","#7f9bb8","#c98b8b","#b8a58a","#a3b3c2","#e3c58f","#9a8bb5"]
-                 : ["#2a1f17","#a8742a","#5f7f6b","#4a6785","#a4585c","#8b7355","#7d8a96","#c9a46a"];
-  const CL = dk ? { cur:"#d9a95b", prev:"#5a4c3d", base:"#5a4c3d", peak:"#d9a95b", bar:"#d9a95b", ma:"#f1e9dc", daily:"#8f8270", fill:"rgba(217,169,91,.10)", trend:"#c98b8b", up:"#8fc4a1", down:"#e0958f", pct:"#e3c58f" }
-                 : { cur:"#2a1f17", prev:"#d6c7ad", base:"#d6c7ad", peak:"#a8742a", bar:"#a8742a", ma:"#2a1f17", daily:"#c9b79c", fill:"rgba(168,116,42,.09)", trend:"#a4585c", up:"#3f7d58", down:"#b5524f", pct:"#a8742a" };
+  const PAL = ["#2563eb","#059669","#d97706","#e11d48","#7c3aed","#0891b2","#db2777","#4f46e5"];
   const dimTxt = getComputedStyle(document.body).getPropertyValue("--cream-dim").trim() || "#5c6478";
 
   const ctx1 = document.getElementById("chartWeekly");
@@ -2060,7 +1970,7 @@ function renderDashboard(){
     if(cmpEl){
       if(lastSumSame>0){
         const pc = (thisSum-lastSumSame)/lastSumSame*100;
-        cmpEl.style.color = pc>=0 ? CL.up : CL.down;
+        cmpEl.style.color = pc>=0 ? "#059669" : "#e11d48";
         cmpEl.textContent = (pc>=0?"▲ Naik ":"▼ Turun ")+Math.abs(pc).toFixed(1).replace(".",",")+"% · "+fmtRp(thisSum)+" vs "+fmtRp(lastSumSame)+" (minggu lalu, s/d hari yang sama)";
       } else {
         cmpEl.style.color = dimTxt;
@@ -2080,9 +1990,9 @@ function renderDashboard(){
       return " "+c.dataset.label+": "+fmtRp(c.parsed.y);
     };
     chartWeekly = new Chart(ctx1, { type:"bar", data:{ labels:wkLabels, datasets:[
-      { type:"bar", label:"Minggu Lalu", data:lastData, backgroundColor:CL.prev, borderRadius:4, borderSkipped:false, maxBarThickness:30, order:2 },
-      { type:"bar", label:"Minggu Ini", data:thisData, backgroundColor:CL.cur, borderRadius:4, borderSkipped:false, maxBarThickness:30, order:2 },
-      { type:"line", label:"% Naik/Turun", data:pctData, yAxisID:"y1", borderColor:CL.pct, backgroundColor:CL.pct, borderWidth:2, tension:.3, spanGaps:true, pointRadius:4, pointBorderColor:getComputedStyle(document.body).getPropertyValue("--surface").trim()||"#fff", pointBorderWidth:2, pointBackgroundColor:pctData.map(v=>v===null?CL.pct:(v>=0?CL.up:CL.down)), order:1 }
+      { type:"bar", label:"Minggu Lalu", data:lastData, backgroundColor:"#f59e0b", borderRadius:6, order:2 },
+      { type:"bar", label:"Minggu Ini", data:thisData, backgroundColor:"#2563eb", borderRadius:6, order:2 },
+      { type:"line", label:"% Naik/Turun", data:pctData, yAxisID:"y1", borderColor:"#7c3aed", backgroundColor:"#7c3aed", borderWidth:2.5, tension:.3, spanGaps:true, pointRadius:5, pointBorderColor:"#fff", pointBorderWidth:2, pointBackgroundColor:pctData.map(v=>v===null?"#7c3aed":(v>=0?"#059669":"#e11d48")), order:1 }
     ]}, options: optsW });
   }
 
@@ -2091,14 +2001,14 @@ function renderDashboard(){
   const ctx2 = document.getElementById("chartPayment");
   if(ctx2){
     if(chartPayment) chartPayment.destroy();
-    chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:PAL, borderWidth:3, borderColor:getComputedStyle(document.body).getPropertyValue("--surface").trim()||"#fff" }]}, options:{ responsive:true, maintainAspectRatio:false, cutout:"68%", plugins:{ legend:{ position:"bottom", labels:{ color:dimTxt, usePointStyle:true, boxWidth:8, padding:14 } }, tooltip:{ callbacks:{ label:c=>" "+c.label+": "+fmtRp(c.parsed) } } } } });
+    chartPayment = new Chart(ctx2, { type:"doughnut", data:{ labels:Object.keys(payAgg), datasets:[{ data:Object.values(payAgg), backgroundColor:PAL, borderWidth:3, borderColor:getComputedStyle(document.body).getPropertyValue("--surface").trim()||"#fff" }]}, options:{ responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{ legend:{ position:"bottom", labels:{ color:dimTxt, usePointStyle:true } }, tooltip:{ callbacks:{ label:c=>" "+c.label+": "+fmtRp(c.parsed) } } } } });
   }
 
   const ctxH = document.getElementById("chartHourly");
   if(ctxH){
     if(chartHourly) chartHourly.destroy();
     const hrs = []; for(let h=6;h<=23;h++) hrs.push(h);
-    chartHourly = new Chart(ctxH, { type:"bar", data:{ labels:hrs.map(h=>String(h).padStart(2,"0")), datasets:[{ label:"Penjualan", data:hrs.map(h=>hourly[h]), backgroundColor:hrs.map(h=>h===peakH?CL.peak:CL.base), borderRadius:4, borderSkipped:false, maxBarThickness:22 }]}, options: chartOpts(true) });
+    chartHourly = new Chart(ctxH, { type:"bar", data:{ labels:hrs.map(h=>String(h).padStart(2,"0")), datasets:[{ label:"Penjualan", data:hrs.map(h=>hourly[h]), backgroundColor:hrs.map(h=>h===peakH?"#e11d48":"#0891b2"), borderRadius:6 }]}, options: chartOpts(true) });
   }
 
   const weekTrx = allTrx.filter(t=>dayKeys.includes(t.date));
@@ -2108,7 +2018,7 @@ function renderDashboard(){
   const ctx3 = document.getElementById("chartTopProduct");
   if(ctx3){
     if(chartTopProduct) chartTopProduct.destroy();
-    chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor: CL.bar, borderRadius:4, borderSkipped:false, maxBarThickness:18 }]}, options: { ...chartOpts(false), indexAxis:"y" } });
+    chartTopProduct = new Chart(ctx3, { type:"bar", data:{ labels: topProds.map(p=>p[0]), datasets:[{ label:"Qty Terjual", data: topProds.map(p=>p[1]), backgroundColor: topProds.map((_,i)=>PAL[i%PAL.length]), borderRadius:6 }]}, options: { ...chartOpts(false), indexAxis:"y" } });
   }
 
   // ---- Tren penjualan sejak awal rilis (otomatis ikut update tiap ada transaksi) ----
@@ -2145,7 +2055,7 @@ function renderDashboard(){
       const lblFull = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
       if(sumEl){
         const up = slope>=0;
-        sumEl.style.color = n>1 ? (up ? CL.up : CL.down) : dimTxt;
+        sumEl.style.color = n>1 ? (up ? "#059669" : "#e11d48") : dimTxt;
         sumEl.textContent = (n>1 ? (up?"▲ Tren naik ":"▼ Tren turun ")+"≈ "+fmtRp(Math.abs(slope))+"/hari · " : "")
           + "Sejak "+lblFull(keys[0]).replace(/^\S+,\s*/,"")+" ("+n+" hari) · Total "+fmtRp(total)
           + " · Rata-rata "+fmtRp(activeDays? total/activeDays : 0)+"/hari buka"
@@ -2159,9 +2069,9 @@ function renderDashboard(){
       optsT.scales.x.ticks.maxRotation = 0; optsT.scales.x.ticks.autoSkip = true; optsT.scales.x.ticks.maxTicksLimit = 12;
       const ptR = n>45 ? 0 : 3;
       chartTrend = new Chart(ctxT, { type:"line", data:{ labels:keys.map(lbl), datasets:[
-        { label:"Penjualan Harian", data:vals, borderColor:CL.daily, backgroundColor:CL.fill, fill:true, borderWidth:1.5, tension:.25, pointRadius:ptR, pointBackgroundColor:CL.daily },
-        { label:"Rata-rata 7 Hari", data:ma, borderColor:CL.ma, borderWidth:2.5, tension:.35, pointRadius:0 },
-        { label:"Garis Tren", data:trendLine, borderColor:CL.trend, borderWidth:1.5, borderDash:[6,5], pointRadius:0, tension:0 }
+        { label:"Penjualan Harian", data:vals, borderColor:"#93c5fd", backgroundColor:"rgba(37,99,235,.10)", fill:true, borderWidth:1.5, tension:.25, pointRadius:ptR, pointBackgroundColor:"#2563eb" },
+        { label:"Rata-rata 7 Hari", data:ma, borderColor:"#2563eb", borderWidth:3, tension:.35, pointRadius:0 },
+        { label:"Garis Tren", data:trendLine, borderColor:"#e11d48", borderWidth:2, borderDash:[7,5], pointRadius:0, tension:0 }
       ]}, options: optsT });
     }
   }
@@ -2172,8 +2082,8 @@ function chartOpts(money){
   const lineColor = document.body.classList.contains("theme-dark") ? "rgba(244,234,216,.08)" : "rgba(30,36,51,.07)";
   const short = v => v>=1e6 ? (v/1e6)+"jt" : v>=1e3 ? (v/1e3)+"rb" : v;
   return { responsive:true, maintainAspectRatio:false,
-    scales:{ x:{ ticks:{color:faint}, grid:{display:false}, border:{display:false} }, y:{ beginAtZero:true, ticks:{color:faint, callback: money ? short : undefined}, grid:{color:lineColor}, border:{display:false} } },
-    plugins:{ legend:{display:false}, tooltip:{ backgroundColor:(document.body.classList.contains("theme-dark")?"#f1e9dc":"#2a1f17"), titleColor:(document.body.classList.contains("theme-dark")?"#1c1610":"#fbf6ee"), bodyColor:(document.body.classList.contains("theme-dark")?"#1c1610":"#fbf6ee"), padding:10, cornerRadius:8, boxPadding:4, callbacks:{ label: c=> " "+(money ? fmtRp(c.parsed.y) : (c.parsed.x!==undefined && c.chart.options.indexAxis==="y" ? c.parsed.x : c.parsed.y)) } } } };
+    scales:{ x:{ ticks:{color:faint}, grid:{color:lineColor} }, y:{ beginAtZero:true, ticks:{color:faint, callback: money ? short : undefined}, grid:{color:lineColor} } },
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=> " "+(money ? fmtRp(c.parsed.y) : (c.parsed.x!==undefined && c.chart.options.indexAxis==="y" ? c.parsed.x : c.parsed.y)) } } } };
 }
 
 /* =========================================================
