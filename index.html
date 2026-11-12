@@ -643,8 +643,8 @@ body.theme-dark #view-dashboard{
         <section class="dGroup">
           <h3 class="dGroupTitle">Cup terjual</h3>
           <div class="kpi">
-            <div class="lead"><div class="lbl">Cup hari ini</div><div class="val" id="dashCup">0</div><div class="sub" id="dashCupSub">-</div><span class="trendPill" id="dashCupTrend">-</span></div>
-            <div><div class="lbl">Cup 7 hari terakhir</div><div class="val" id="dashCupWeek">0</div><div class="sub" id="dashCupWeekSub">-</div></div>
+            <div class="lead"><div class="lbl">Cup hari ini</div><div class="val" id="dashCup">0</div><div class="sub" id="dashCupSub">-</div><span class="trendPill" id="dashCupTrend" style="margin-right:6px;">-</span><span class="trendPill" id="dashCupWowTrend">-</span></div>
+            <div><div class="lbl">Cup minggu ini</div><div class="val" id="dashCupWeek">0</div><div class="sub" id="dashCupWeekSub">-</div><span class="trendPill" id="dashCupWeekTrend">-</span></div>
             <div><div class="lbl">Cup bulan ini</div><div class="val" id="dashCupMonth">0</div><div class="sub" id="dashCupMonthSub">-</div></div>
             <div><div class="lbl">Cup terlaris hari ini</div><div class="val txt" id="dashCupTop">-</div><div class="sub" id="dashCupTopSub">-</div></div>
           </div>
@@ -659,6 +659,13 @@ body.theme-dark #view-dashboard{
             <div><div class="lbl">Piutang belum lunas</div><div class="val" id="dashPiutang">Rp0</div><div class="sub" id="dashPiutangSub">-</div></div>
           </div>
         </section>
+
+        <div class="dPanel" style="margin-bottom:16px;">
+          <h3>Pendapatan hari ini vs kemarin</h3>
+          <div class="hint">Akumulasi penjualan lunas per jam, hari ini dibandingkan kemarin</div>
+          <div id="dayCmp" class="dNote"></div>
+          <div class="chartBox"><canvas id="chartDayCmp"></canvas></div>
+        </div>
 
         <div class="dRow r21">
           <div class="dPanel"><h3>Minggu ini vs minggu lalu</h3><div class="hint">Penjualan lunas per hari, Senin sampai Minggu</div><div id="weeklyCmp" class="dNote"></div><div class="chartBox"><canvas id="chartWeekly"></canvas></div></div>
@@ -992,7 +999,7 @@ let currentView = "dashboard";
 let menuTab = "produk", stokTab = "stok", lapTab = "penjualan";
 let editingProdId = null, editingCatId = null, editingUserId = null;
 let lastTrxData = null;
-let chartWeekly = null, chartPayment = null, chartTopProduct = null, chartHourly = null, chartTrend = null;
+let chartDayCmp = null, chartWeekly = null, chartPayment = null, chartTopProduct = null, chartHourly = null, chartTrend = null;
 let dashSnap = {};
 
 const PAY_METHODS = ["Cash","QRIS","Tagihan"];
@@ -2017,8 +2024,29 @@ function renderDashboard(){
   if(cupYesterday>0){ const d=cupToday-cupYesterday; cupTrend=(d>=0?"▲ ":"▼ ")+Math.abs(d)+" cup vs kemarin ("+cupYesterday+")"; cupTrendCls=d>=0?"":"down"; }
   else if(cupToday>0){ cupTrend="▲ Kemarin belum ada cup"; }
   const cEl = document.getElementById("dashCupTrend"); if(cEl){ cEl.textContent=cupTrend; cEl.className="trendPill "+cupTrendCls; }
-  setTxt("dashCupWeek", fmtN(cupWeek));
-  setTxt("dashCupWeekSub", "Rata-rata "+avg1(cupWeek/7)+" cup/hari");
+  // Cup vs minggu lalu: (a) hari ini vs hari yang sama minggu lalu, (b) minggu ini (Sen s/d hari ini) vs minggu lalu (rentang sama)
+  const baseDc = new Date(today+"T00:00:00");
+  const dowC = (baseDc.getDay()+6)%7;                       // Senin = 0
+  const dateOff = n => { const d=new Date(baseDc); d.setDate(d.getDate()+n); return ymdLocal(d); };
+  const wkThis = Array.from({length:dowC+1},(_,i)=>dateOff(-dowC+i));
+  const wkLast = wkThis.map((_,i)=>dateOff(-dowC-7+i));
+  const cupWeekThis = cupQtyOf(allTrx.filter(t=>wkThis.includes(t.date)));
+  const cupWeekLast = cupQtyOf(allTrx.filter(t=>wkLast.includes(t.date)));
+  const lwKey = dateOff(-7);
+  const cupLwDay = cupQtyOf(allTrx.filter(t=>t.date===lwKey));
+  const dayNm = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long"});
+  const dayShortNm = k => new Date(k+"T00:00:00").toLocaleDateString("id-ID",{weekday:"short"});
+  const setPill = (id, cur, prev, label, emptyTxt) => {
+    const el = document.getElementById(id); if(!el) return;
+    let txt = emptyTxt, cls = "";
+    if(prev>0){ const d=cur-prev, pct=Math.round(d/prev*100); txt=(d>=0?"▲ ":"▼ ")+Math.abs(d)+" cup ("+(pct>=0?"+":"")+pct+"%) vs "+label+" ("+prev+")"; cls=d>=0?"":"down"; }
+    else if(cur>0){ txt="▲ "+label+" belum ada cup"; }
+    el.textContent = txt; el.className = "trendPill "+cls;
+  };
+  setPill("dashCupWowTrend", cupToday, cupLwDay, dayNm(lwKey)+" lalu", "Belum ada pembanding "+dayNm(lwKey)+" lalu");
+  setTxt("dashCupWeek", fmtN(cupWeekThis));
+  setTxt("dashCupWeekSub", "Minggu lalu: "+fmtN(cupWeekLast)+" cup ("+(dowC===0?dayShortNm(wkLast[0]):dayShortNm(wkLast[0])+"–"+dayShortNm(wkLast[dowC]))+")");
+  setPill("dashCupWeekTrend", cupWeekThis, cupWeekLast, "minggu lalu", "Belum ada pembanding minggu lalu");
   setTxt("dashCupMonth", fmtN(cupMonth));
   setTxt("dashCupMonthSub", "Rata-rata "+avg1(cupMonth/new Date().getDate())+" cup/hari");
   setTxt("dashCupTop", cupTop ? cupTop[0] : "-");
@@ -2038,6 +2066,44 @@ function renderDashboard(){
   const CL = dk ? { cur:"#d9a95b", prev:"#5a4c3d", base:"#5a4c3d", peak:"#d9a95b", bar:"#d9a95b", ma:"#f1e9dc", daily:"#8f8270", fill:"rgba(217,169,91,.10)", trend:"#c98b8b", up:"#8fc4a1", down:"#e0958f", pct:"#e3c58f" }
                  : { cur:"#2a1f17", prev:"#d6c7ad", base:"#d6c7ad", peak:"#a8742a", bar:"#a8742a", ma:"#2a1f17", daily:"#c9b79c", fill:"rgba(168,116,42,.09)", trend:"#a4585c", up:"#3f7d58", down:"#b5524f", pct:"#a8742a" };
   const dimTxt = getComputedStyle(document.body).getPropertyValue("--cream-dim").trim() || "#5c6478";
+
+  const ctxD = document.getElementById("chartDayCmp");
+  if(ctxD){
+    if(chartDayCmp) chartDayCmp.destroy();
+    // Akumulasi pendapatan (lunas) per jam: hari ini vs kemarin
+    const hY = Array(24).fill(0);
+    allTrx.filter(t=>t.date===ydKey && isLunas(t)).forEach(t=>{ hY[new Date(t.timestamp||Date.now()).getHours()] += t.total; });
+    const nowH = new Date().getHours();
+    let lo = 24, hi = -1;
+    for(let h=0;h<24;h++){ if(hourly[h]>0 || hY[h]>0){ lo=Math.min(lo,h); hi=Math.max(hi,h); } }
+    if(hi<0){ lo=8; hi=Math.max(nowH,17); } else { hi=Math.max(hi,nowH); }
+    hi = Math.min(23,hi); lo = Math.min(lo,hi);
+    const hrs2 = []; for(let h=lo;h<=hi;h++) hrs2.push(h);
+    let aT=0, aY=0;
+    const cumToday = hrs2.map(h=>{ aT+=hourly[h]; return h<=nowH ? aT : null; });
+    const cumYest  = hrs2.map(h=>{ aY+=hY[h]; return aY; });
+    let ySameHour = 0; for(let h=0;h<=nowH;h++) ySameHour += hY[h];
+    const dcEl = document.getElementById("dayCmp");
+    if(dcEl){
+      if(ySameHour>0){
+        const pc = (totalSales-ySameHour)/ySameHour*100;
+        dcEl.style.color = pc>=0 ? CL.up : CL.down;
+        dcEl.textContent = (pc>=0?"▲ Naik ":"▼ Turun ")+Math.abs(pc).toFixed(1).replace(".",",")+"% · "+fmtRp(totalSales)+" hari ini vs "+fmtRp(ySameHour)+" kemarin pada jam yang sama (s/d "+hh(nowH+1)+") · total kemarin "+fmtRp(ySales);
+      } else {
+        dcEl.style.color = dimTxt;
+        dcEl.textContent = totalSales>0 ? fmtRp(totalSales)+" hari ini · belum ada pembanding kemarin" : "Belum ada penjualan lunas hari ini dan kemarin";
+      }
+    }
+    const optsD = chartOpts(true);
+    optsD.interaction = { mode:"index", intersect:false };
+    optsD.plugins.legend = { display:true, labels:{ color:dimTxt, usePointStyle:true, boxWidth:8 } };
+    optsD.plugins.tooltip.callbacks.title = items => items.length ? "Sampai jam "+items[0].label+":59" : "";
+    optsD.plugins.tooltip.callbacks.label = c => c.parsed.y===null ? "" : " "+c.dataset.label+": "+fmtRp(c.parsed.y);
+    chartDayCmp = new Chart(ctxD, { type:"line", data:{ labels:hrs2.map(h=>String(h).padStart(2,"0")), datasets:[
+      { label:"Kemarin", data:cumYest, borderColor:(dk?"#8f8270":"#9a8a73"), backgroundColor:(dk?"#8f8270":"#9a8a73"), borderWidth:2, borderDash:[6,4], tension:.3, pointRadius:0, pointHoverRadius:4, order:2 },
+      { label:"Hari ini", data:cumToday, borderColor:CL.cur, backgroundColor:CL.fill, fill:true, borderWidth:2.5, tension:.3, pointRadius:3, pointHoverRadius:5, spanGaps:false, order:1 }
+    ]}, options: optsD });
+  }
 
   const ctx1 = document.getElementById("chartWeekly");
   if(ctx1){
